@@ -15,27 +15,7 @@ start_time <- Sys.time()
 print(paste0('---START--- Starting at ',start_time))
 
 packages_list <- c('ggplot2',
-                   'plyr',
-                   'dplyr',
-                   'png',
-                   'knitr',
-                   'moments',
-                   'e1071',
-                   'glmnet',
-                   'caret',
-                   'data.table',
-                   'bit64',
-                   'fasttime',
-                   'lubridate',
-                   'geosphere',
-                   'caret',
-                   'corrplot',
-                   'leaflet.extras',
-                   'magrittr',
-                   'tidyr',
-                   'reshape2',
-                   'varhandle',
-                   'xgboost'
+                   'data.table'
                     )
 
 for (i in packages_list){
@@ -53,40 +33,67 @@ print(paste0('[', round(difftime(Sys.time(),start_time, units = 'secs'),1), 's]:
              'All necessary packages installed and loaded'))
 ```
 
-# 1. Introduction
+# Classifying Term Deposits
 
-# 2. Data Preprocessing 
+## 1. Introduction
 
-# 3. Data Exploration
+## 2. Data Loading and Preprocessing 
 
-# 4. Baseline
+## 3. Data Exploration
 
-# 5. Feature Engineering
+## 4. Baseline
 
-# 6. Modeling
+## 5. Feature Engineering
 
+## 6. Modeling
+
+## 1. Introduction
+This is the intro.
+
+## 2. Data Loading and Preprocessing
+
+Here we load the necessary train and test data.
 
 ```{r Load Data, include=FALSE}
 # Loading the Data
-trainOrig = fread("BankCamp_train.csv", stringsAsFactors = T)
-testOrig = fread("BankCamp_test.csv", stringsAsFactors = T)
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+train = fread("BankCamp_train.csv", stringsAsFactors = T)
+test = fread("BankCamp_test.csv", stringsAsFactors = T)
 ```
 
-## Including Plots
+These are the first few rows of the training data.
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r head}
+head(train)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+This is the structure of the data.
+
+```{r str}
+str(train)
+```
+
+This is the summary of the data.
+
+```{r summary}
+summary(train)
+```
+
+Now we check if there are missing values in any column:
+
+```{r missing}
+sapply(train, function(x) sum(is.na(x)))
+```
+
+Finally we check if there are any duplicate values:
+
+```{r duplicated}
+any(duplicated(train))
+```
+
+Now we set the types for numerical variables:
+
+```{r numerical}
+train[ , which(sapply(train, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(train, is.integer)]
+test[ , which(sapply(test, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(test, is.integer)]
+```
+
