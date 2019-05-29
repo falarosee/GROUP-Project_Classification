@@ -1,0 +1,537 @@
+---
+title: "Individual Assignment Advanced R: House Price Predictions"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+author: Franz-Anton La Rosée
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+start_time <- Sys.time()
+print(paste0('---START--- Starting at ',start_time))
+
+packages_list <- c('ggplot2',
+                   'plyr',
+                   'dplyr',
+                   'png',
+                   'knitr',
+                   'moments',
+                   'e1071',
+                   'glmnet',
+                   'caret',
+                   'data.table',
+                   'bit64',
+                   'fasttime',
+                   'lubridate',
+                   'geosphere',
+                   'caret',
+                   'corrplot',
+                   'leaflet.extras',
+                   'magrittr',
+                   'tidyr',
+                   'reshape2',
+                   'varhandle',
+                   'xgboost'
+                    )
+
+for (i in packages_list){
+  if(!i%in%installed.packages()){
+    install.packages(i, dependencies = TRUE)
+    library(i, character.only = TRUE)
+    print(paste0(i, ' has been installed'))
+  } else {
+    print(paste0(i, ' is already installed'))
+    library(i, character.only = TRUE)
+  }
+}
+
+print(paste0('[', round(difftime(Sys.time(),start_time, units = 'secs'),1), 's]: ',
+             'All necessary packages installed and loaded'))
+```
+
+
+# 1. Introduction
+
+This report deliniates a house pricing prediction model that is trained on a dataset originally containing 17,277 observations and subsequently tested on a dataset containing 4320 additional observations. To prevent overfitting, the test dataset has only been modified in terms of the feature transformation process and has not been used otherwise for model training or evaluative purposes. The modelling methodology revolves around the technical steps of the CRISP-DM method, namely section 2. Data Understanding (Data Cleansing & EDA), section 3. Data Preperation (Feature Modification, Feature Creation and Feature Engineering), section 4. Data Modelling & Evaluation. The "Business Understanding " step within the CRISP-DM methodology will be discussed whenever technical decisions are made that have a bearing on the business use case. As no specific business use case was provided, it is assumed that the business objective is to predic housing prices with the least possible error. The "Model Deployment" step within the CRISP-DM methodology will not be discussed further, as it is outside of the scope of the assignment.
+
+# 2. Data Understanding
+
+The first part of this report revolves around understanding the data. Here, the data quality is evaluated and some basic cleaning and pre-processing is undertaken in order to prepare the data for the baseline model which will act as a benchmark for all future data transformation in the feature engineering process. Within this pipe-line, pre-processing involves anything that can be done to get the data ready for a baseline model that does not require an EDA (Exploratory Data Analysis). This typically involves loading the data, merging it, looking for NA's, looking for missing values, dropping meaningless variables and correcting variable types. 
+
+## 2.1 Pre-Processing
+
+```{r Loading Data}
+# Loading the Data
+trainOrig = fread("house_price_train.csv", stringsAsFactors = T)
+testOrig = fread("house_price_test.csv", stringsAsFactors = T)
+```
+
+```{r Consolidating Data}
+# Consolidating the data
+testOrig$price <- NA
+consolDT <- rbind(trainOrig, testOrig)
+```
+
+```{r Data PreExploration}
+summary(consolDT)
+str(consolDT)
+colSums(is.na(consolDT))
+colSums(consolDT == 0)
+```
+
+As we can see from the tables above, there are no NA's apart from the one's that were imputed into the testOrig$Price column, however, at first glance there are some problems with missing values and variable types. The "Date" variable is in character type, rather than date type, a number of categorical variables are written as integers and there is an "id" dimension that can be removed as it has no bearing on the problem. These can be corrected easily, before looking at the data any further. 
+
+However, the zeros in the variable "yr_renovated" seem to denote a lot of missing values, as "yr_renovated" is not a boolean variable such as "view" and "waterfront" and there seems to be no other explanation for the appearance of zeros here. Further, the zeros in "sqft_basement" do not seem to indicate missing values, because they can be explained by flats that do not have basements. After the EDA section, thought will be given on how to deal with these variables.
+
+
+```{r PreProcessing Variables}
+
+preprocDT <- consolDT
+preprocDT[,id:=NULL]
+
+#Date Variables
+preprocDT$date <- as.Date(preprocDT$date , "%m/%d/%Y")
+preprocDT$month <- month(preprocDT$date)
+preprocDT$year <- year(preprocDT$date)
+preprocDT$date <- NULL
+
+#Categorical Variables
+catVars<- c("waterfront", "view", "yr_built", "condition", "grade", "zipcode", "month", "year")
+preprocDT[,catVars] <- lapply(preprocDT[,..catVars], factor)
+str(preprocDT)
+
+```
+
+## 2.2 Baseline Model
+
+With these basic transformations completed, the data is ready to train a baseline model. For this purpose, the train datasets is extracted from the preprocDT, in order to train and test the baseline on the train set. To this end a basic linear regression will be used to train the model. 
+
+```{r Training BaseLine Model}
+# Extracting TrainSet
+trainPreprocDT <- preprocDT[!is.na(preprocDT$price),]
+
+# Splitting TrainSet into additional train & test 
+f_partition<-function(df,test_proportion=0.2, seed=NULL){
+  
+  if(!is.null(seed)) set.seed(seed)
+  
+  train_index<-sample(nrow(df), floor(nrow(df)*(1-test_proportion)), replace = FALSE)
+  df_train<-df[train_index,]
+  df_test<-df[-train_index,]
+  
+  return(list(train=df_train, test=df_test))
+}
+
+whole_data <- f_partition(df = trainPreprocDT,
+                        test_proportion = 0.2,
+                        seed = 100)
+
+# Training Linear Regression Model
+baselineMod = lm(price ~ ., whole_data$train )
+summary(baselineMod)
+```
+
+
+```{r}
+
+#Defining Error Function
+mape<-function(real,predicted){
+  return(mean(abs((real-predicted)/real)))
+}
+
+
+#Calculating Error
+baselinePred <- predict(baselineMod,whole_data$test)
+
+paste("The MAPE is", mape(whole_data$test$price,baselinePred), sep = " ")
+```
+
+As can see above, the Mean Absolute Percentage Error of the Baseline Model is .18 and the Multiple R-squared is 0.84. To check for over-fitting, k-fold cross-validation is applied below. If the average R-squared values that comes out of the 10 folds is significantly different than the R-squared from test split above, there is under- or overfitting that should be explored in the EDA. 
+
+```{r}
+
+# Define training control
+set.seed(123) 
+train.control <- trainControl(method = "cv", number = 10)
+# Train the model
+baselineCV <- train(price ~., data = trainPreprocDT, method = "lm",
+               trControl = train.control)
+# Summarize the results
+print(baselineCV)
+```
+
+As can be seen the R-squared values are close, and therefore the model does not seem to be  over-fitting at this point. To gain an understanding of the distribution of the variables, an EDA is conducted in the next step below. 
+
+## 2.3 EDA (Exploratory Data Analysis)
+
+In the EDA the data will be explored to inform decisions on later variable tranformations. Both numerical and catagroical variables will be explored. 
+
+### 2.31 Numerical Variables
+
+A correlation matrix is constructed below, to gain a first understanding of the correlation of the numeric variables with each other and with the target variable. 
+
+```{r}
+trainPreprocNum <- trainPreprocDT[,-..catVars]
+str(trainPreprocNum)
+
+corresult = cor(trainPreprocNum)
+corrplot(corresult,  type="upper")
+
+```
+
+
+As can be seen above, the variables "sqft_living" and "grade" have the greatest correlation with the target variable. "sqft_living" is however also closely related "sqft_above" and "sqft_living15." "Sqft_lot" and "sqft_lot15" are also closely related. When there are two closely related variables, one should be removed to prevent the model to be trained on redundant data. As there is no precise description of the variables provided with the data set, removing variables will have to be explored experimentally within the later phases. 
+
+Like sqft_living, bathrooms also have a close correlation to the target variable. To understand these correlations better, each variable will be plotted against price.
+
+```{r}
+numVarGraph <- gather(trainPreprocDT, variable, value, -price, -catVars)
+
+ggplot(numVarGraph) +
+    geom_jitter(aes(value,price, color=variable)) + # creates scatter plot
+    geom_smooth(aes(value,price), method=lm, se=FALSE) + # line gets drawn
+    facet_wrap(~variable, scales="free_x") +
+    scale_y_continuous(labels = scales::comma) +
+    theme(legend.position = "none") +
+    labs(title="Relation Of price With Numerical Variables")
+```
+
+The graphs above confirm  strong linear relationships beteen price and "sqft_living", "grade" as well as weeker linear relationships betwen price, bathrooms and bedrooms. 
+
+Below, boxplots are plotted to check for outliers. To this end, numerical variables are split between small, medium and large scales. An additional boxplot will be created to understand the distribution of the target variable "price".
+
+```{r}
+num_columns_large <- c()
+num_columns_med <- c()
+num_columns_small <- c()
+
+boxPlotNum<-as.data.frame(trainPreprocNum[,-"price"])
+
+
+for (column in colnames(boxPlotNum)) {
+  
+  if(is.numeric(boxPlotNum[1,column]) | is.integer(boxPlotNum[1,column])){
+    
+    if(max(abs(boxPlotNum[,column]))<40){
+    num_columns_small <- c(num_columns_small, column)
+    }
+    
+    if(max(abs(boxPlotNum[,column]))>=40 && max(abs(boxPlotNum[,column]))<1000){
+    num_columns_med <- c(num_columns_med, column)
+    }
+    
+    if(max(abs(boxPlotNum[,column]))>=1000){
+    num_columns_large <- c(num_columns_large, column)
+    }
+    
+  }
+  
+}
+
+num_columns_small
+num_columns_med
+num_columns_large
+```
+
+
+```{r}
+boxplot(boxPlotNum[,num_columns_small])
+boxplot(boxPlotNum[,num_columns_med])
+boxplot(boxPlotNum[,num_columns_large])
+boxplot(as.data.frame(trainPreprocNum[,price])) 
+```
+
+As there are significant outliers in the price plot, variable outliers will not be treated at this stage as they could hold explanatory value for the targe variable. 
+
+As skewness in the target variable may significantly affect model performance, skewness of the target variable "price" will be checked below:
+
+```{r}
+df <- rbind(data.frame(version="price",x=trainPreprocDT$price),
+            data.frame(version="log(price+1)",x=log(trainPreprocDT$price + 1)))
+
+ggplot(data=df) +
+  facet_wrap(~version,ncol=2,scales="free_x") +
+  geom_histogram(aes(x=x), bins = 50) +
+  scale_x_continuous(labels = scales::comma)
+
+```
+
+It can be seen above that transforming to log significantly reduces skewness of target variable.
+
+### 2.32 Categorical Variables
+
+First, the distribution of the variables is checked.
+
+```{r}
+for(i in catVars){
+  counts <- table(trainPreprocDT[,..i])
+  barplot(counts, main = i)
+}
+```
+
+It can be seen that in the cases of the boolean variables "waterfront" and "view", that the vast majority of data contains 0 values, however the variables might be valuable to explain price outliers. The "condition" variable, shows that the vast majority of data is in medium condition. The grade varaible is slightly skewed to the right, year built shows a trend moving up, year renovated shows a very high number of zeros and zipcode looks to be quite randomly distributed. Further we see that most sales were made in 2014 and that there tends to be less sales at the beginning and at the end of the year. 
+
+
+```{r}
+catVarGraph <- gather(trainPreprocDT, variable, value, catVars)
+
+ggplot(catVarGraph) +
+    geom_jitter(aes(value,price, color=variable)) + # creates scatter plot
+    geom_smooth(aes(value,price), method=lm, se=FALSE) + # line gets drawn
+    facet_wrap(~variable, scales="free_x") +
+    scale_y_continuous(labels = scales::comma) +
+    scale_x_discrete() +
+    theme(legend.position = "none") +
+    labs(title="Relation Of price With Categorical Variables")
+```
+
+At this point, there seems to be only a clear linear relationship between price and "condition" as well as price and "grade". 
+
+# 3. Data Prepration (Feature Modification, Feature Creation and Feature Engineering)
+
+Now that a preliminary understanding of the data has been gained, features will be modified, created and engineered in order to improve the baseline score. 
+
+## 3.1 Feature Creation
+
+Within the EDA can be observed a strong correlation between "sqft_living" and "sqft_living15" as well as "sqft_lot" and "sqft_lot15". First, it is assumed that "sqft_living" and "sqft_lot" refer to the number of square feet during the year 2014 and "sqft_living15" and "sqft_lot15" refer to the number of square feet in the year 2015. It is further assumed that "Date" refers to the date sold. To correct the correlations, the respective dimensions will be summarzied in two additional columns named "sqft_living_at_sales_date" and "sqft_lot_at_sales_date" where the "sqft_living" value will be taken whenvever "date" is 2014 and the "sqft_living15" value will be taken whenvever "date" is 2015. The same procedure will be undertaken with sqft_lot and sqft_lot15.
+
+```{r}
+fc1DT <- preprocDT
+
+if (fc1DT$year==2014) {
+  fc1DT$sqft_living_at_sales_date <- fc1DT$sqft_living
+  } else { 
+    fc1DT$sqft_living_at_sales_date <- fc1DT$sqft_living15
+}
+
+
+if (fc1DT$year==2014) {
+  fc1DT$sqft_lot_at_sales_date <- fc1DT$sqft_lot
+  } else { 
+    fc1DT$sqft_lot_at_sales_date <- fc1DT$sqft_lot15
+  }
+
+str(fc1DT)
+```
+
+Next, additional features are created.
+
+Numerical Feature Creation
+```{r}
+#Property age
+fc1DT$Prop_Age <- unfactor(preprocDT[,year]) - consolDT[,yr_built]
+
+#Distance from fixed point on every building
+fc1DTDistance <- distGeo(as.matrix(fc1DT[,c('long','lat')]), c(0,0))
+fc1DT$distance <- fc1DTDistance
+```
+
+Categorical Feature Creation
+```{R}
+#Renovated y/n
+fc1DT$renovated <- ifelse(fc1DT$yr_renovated==0, 0, 1) #0=Not renovated, 1=Renovated
+
+#Basement y/n
+fc1DT$basement <- ifelse(fc1DT$sqft_basement==0, 0, 1) #0=No basement, 1=basement
+
+catVars<- c(catVars,"renovated", "basement")
+fc1DT[,catVars] <- lapply(fc1DT[,..catVars], factor)
+str(fc1DT)
+```
+
+Additional variables are explored against the target variable below.
+
+```{r}
+trainFc1 <- fc1DT[!is.na(fc1DT$price),]
+numVarGraph2 <- gather(trainFc1, variable, value, -price, -catVars)
+
+ggplot(numVarGraph2) +
+    geom_jitter(aes(value,price, color=variable)) + # creates scatter plot
+    geom_smooth(aes(value,price), method=lm, se=FALSE) + # line gets drawn
+    facet_wrap(~variable, scales="free_x") +
+    scale_y_continuous(labels = scales::comma) +
+    theme(legend.position = "none") +
+    labs(title="Relation Of price With Additional Numerical Variables")
+```
+
+```{r}
+trainFc1 <- fc1DT[!is.na(fc1DT$price),]
+numVarGraph2 <- gather(trainFc1, variable, value, catVars)
+
+ggplot(numVarGraph2) +
+    geom_jitter(aes(value,price, color=variable)) + # creates scatter plot
+    geom_smooth(aes(value,price), method=lm, se=FALSE) + # line gets drawn
+    facet_wrap(~variable, scales="free_x") +
+    scale_y_continuous(labels = scales::comma) +
+    theme(legend.position = "none") +
+    labs(title="Relation Of price With Additional Categorical Variables")
+```
+
+
+A corelation matrix is constructed below to check for multicolinearity in the model. 
+```{r}
+corresult = cor(trainFc1[,-..catVars])
+corrplot(corresult,  type="upper")
+
+```
+Their is a lot of colinearity that will be dealt in the subsequent subsection (Dimension Reduction).
+
+The model is trained using the new features to see if there is an improvement.
+
+```{r Training fc1 Model}
+
+# Extracting TrainSet
+trainFc1 <- fc1DT[!is.na(fc1DT$price),]
+
+# Splitting TrainSet into additional train & test 
+f_partition<-function(df,test_proportion=0.2, seed=NULL){
+  
+  if(!is.null(seed)) set.seed(seed)
+  
+  train_index<-sample(nrow(df), floor(nrow(df)*(1-test_proportion)), replace = FALSE)
+  df_train<-df[train_index,]
+  df_test<-df[-train_index,]
+  
+  return(list(train=df_train, test=df_test))
+}
+
+whole_data <- f_partition(df = trainFc1,
+                        test_proportion = 0.2,
+                        seed = 100)
+
+# Training Linear Regression Model
+baselineMod = lm(price ~ ., whole_data$train )
+summary(baselineMod)
+```
+
+```{r}
+
+#Calculating Error
+baselinePred <- predict(baselineMod,whole_data$test)
+
+paste("The MAPE is", mape(whole_data$test$price,baselinePred), sep = " ")
+```
+
+We see a slight improvement, so we keep the features for later feature dropping and reduction processes.
+
+## 3.2 Feature Modification
+
+As could be seen in the EDA, the target value "price" is heavily skewed. Below this is corrected, by taking the log of the price.
+
+```{r}
+ft1DT <- fc1DT
+ft1DT$price <- log1p(ft1DT$price)
+```
+
+In a similar fashion, skewness of all other features will be normalized below by taking a skweness_threshold of 0.75. 
+
+```{r}
+skewness_threshold = 0.75
+
+numVars <- colnames(ft1DT[,-..catVars])
+remove <- c("price", "lat", "long")
+
+numeric_columns <-numVars[! numVars %in% remove]
+
+skew <- sapply(numeric_columns,function(x){skewness(ft1DT[[x]],na.rm = T)})
+
+dkskew <- skew[abs(skew) > skewness_threshold]
+for (x in names(dkskew)) {
+  ft1DT[[x]] <- log(ft1DT[[x]] + 1)
+}
+
+str(ft1DT)
+```
+
+Next, the missing values in "yr_renovated" are treated. 0's are replaced with -1's so that these values are ignored by the model. 
+
+```{r}
+ft1DT$yr_renovated[ft1DT$yr_renovated == 0] <- -1
+str(ft1DT)
+```
+
+Next the model is trained on the transformed log data to see if an improvement is achieved.
+
+```{r Training fe1 Model}
+
+# Extracting TrainSet
+trainft1DT <- ft1DT[!is.na(ft1DT$price),]
+
+# Splitting TrainSet into additional train & test 
+f_partition<-function(df,test_proportion=0.2, seed=NULL){
+  
+  if(!is.null(seed)) set.seed(seed)
+  
+  train_index<-sample(nrow(df), floor(nrow(df)*(1-test_proportion)), replace = FALSE)
+  df_train<-df[train_index,]
+  df_test<-df[-train_index,]
+  
+  return(list(train=df_train, test=df_test))
+}
+
+whole_data <- f_partition(df = trainft1DT,
+                        test_proportion = 0.2,
+                        seed = 100)
+
+# Training Linear Regression Model
+baselineMod = lm(price ~ ., whole_data$train )
+summary(baselineMod)
+```
+
+To calculate the MAPE, the variables are transformed back from the log scales into their original scales.
+
+```{r}
+
+#Calculating Error
+baselinePred <- as.numeric(exp(predict(baselineMod , newdata = whole_data$test))-1)
+
+
+paste("The MAPE is", mape(as.numeric(exp(whole_data$test$price)-1),baselinePred), sep = " ")
+
+```
+
+We see that the model improved by almost 0.05, which marks a significant improvement. However, the correlation matrix above, showed evidence of multicoliniarity. 
+
+
+# 4. Modeling
+
+To improve the score a stepwise regression is applied.
+
+```{r}
+library(MASS)
+# formula<-as.formula(price~.) 
+lm_0<-stepAIC(baselineMod, direction = "both" ,trace=F)
+summary(lm_0)
+```
+
+```{r}
+
+#Calculating Error
+baselinePred <- as.numeric(exp(predict(lm_0 , newdata = whole_data$test))-1)
+
+
+paste("The MAPE is", mape(as.numeric(exp(whole_data$test$price)-1),baselinePred), sep = " ")
+```
+
+The stepwise regression reduced some factors and brought a small albeit insignificant improvement. Therefore manual feature reduction based on colinearity will be preformed below.
+
+# 5. Conclusion & Final Predictions
+
+In conclusion this report delineates a final model that scores a MAPE of 0.1271. More complicated models such as Random Forrest and XG Boost were explored but had to be thrown out due to lack of processing power. A CSV with the final predictions is saved in the repository folder herein. 
+
+```{r}
+
+final_predictions <- ft1DT[is.na(ft1DT$price),]
+str(final_predictions)
+
+final_predictions$price <- as.numeric(exp(predict(baselineMod , newdata = final_predictions))-1)
+
+str(final_predictions)
+
+write.csv(final_predictions, file = "test_set_predictions.csv")
+```
+
+

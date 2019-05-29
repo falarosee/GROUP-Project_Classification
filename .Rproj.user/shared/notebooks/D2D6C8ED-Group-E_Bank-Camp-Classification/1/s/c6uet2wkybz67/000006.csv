@@ -1,0 +1,4 @@
+"0","testOrig = fread(""BankCamp_test.csv"", stringsAsFactors = T)```
+"
+"2","Error: attempt to use zero-length variable name
+"

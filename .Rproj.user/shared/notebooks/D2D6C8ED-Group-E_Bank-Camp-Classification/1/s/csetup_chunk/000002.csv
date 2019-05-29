@@ -1,0 +1,327 @@
+"0","knitr::opts_chunk$set(echo = TRUE)"
+"0",""
+"0","start_time <- Sys.time()"
+"0","print(paste0('---START--- Starting at ',start_time))"
+"1","[1]"
+"1"," ""---START--- Starting at 2019-05-29 14:14:23"""
+"1","
+"
+"0","packages_list <- c('ggplot2',"
+"0","                   'plyr',"
+"0","                   'dplyr',"
+"0","                   'png',"
+"0","                   'knitr',"
+"0","                   'moments',"
+"0","                   'e1071',"
+"0","                   'glmnet',"
+"0","                   'caret',"
+"0","                   'data.table',"
+"0","                   'bit64',"
+"0","                   'fasttime',"
+"0","                   'lubridate',"
+"0","                   'geosphere',"
+"0","                   'caret',"
+"0","                   'corrplot',"
+"0","                   'leaflet.extras',"
+"0","                   'magrittr',"
+"0","                   'tidyr',"
+"0","                   'reshape2',"
+"0","                   'varhandle',"
+"0","                   'xgboost'"
+"0","                    )"
+"0",""
+"0","for (i in packages_list){"
+"0","  if(!i%in%installed.packages()){"
+"0","    install.packages(i, dependencies = TRUE)"
+"0","    library(i, character.only = TRUE)"
+"0","    print(paste0(i, ' has been installed'))"
+"0","  } else {"
+"0","    print(paste0(i, ' is already installed'))"
+"0","    library(i, character.only = TRUE)"
+"0","  }"
+"0","}"
+"1","[1]"
+"1"," ""ggplot2 is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""plyr is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""dplyr is already installed"""
+"1","
+"
+"2","
+Attaching package: ‘dplyr’
+
+"
+"2","The following objects are masked from ‘package:plyr’:
+
+    arrange, count, desc, failwith, id, mutate, rename, summarise,
+    summarize
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+"
+"1","[1]"
+"1"," ""png is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""knitr is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""moments is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""e1071 is already installed"""
+"1","
+"
+"2","
+Attaching package: ‘e1071’
+
+"
+"2","The following objects are masked from ‘package:moments’:
+
+    kurtosis, moment, skewness
+
+"
+"1","[1]"
+"1"," ""glmnet is already installed"""
+"1","
+"
+"2","Loading required package: Matrix
+"
+"2","Loading required package: foreach
+"
+"2","Loaded glmnet 2.0-16
+
+"
+"1","[1]"
+"1"," ""caret is already installed"""
+"1","
+"
+"2","Loading required package: lattice
+"
+"1","[1]"
+"1"," ""data.table is already installed"""
+"1","
+"
+"2","data.table 1.11.8  Latest news: r-datatable.com
+"
+"2","
+Attaching package: ‘data.table’
+
+"
+"2","The following objects are masked from ‘package:dplyr’:
+
+    between, first, last
+
+"
+"1","[1]"
+"1"," ""bit64 is already installed"""
+"1","
+"
+"2","Loading required package: bit
+"
+"2","Attaching package bit
+"
+"2","package:bit (c) 2008-2012 Jens Oehlschlaegel (GPL-2)
+"
+"2","creators: bit bitwhich
+"
+"2","coercion: as.logical as.integer as.bit as.bitwhich which
+"
+"2","operator: ! & | xor != ==
+"
+"2","querying: print length any all min max range sum summary
+"
+"2","bit access: length<- [ [<- [[ [[<-
+"
+"2","for more help type ?bit
+"
+"2","
+Attaching package: ‘bit’
+
+"
+"2","The following object is masked from ‘package:data.table’:
+
+    setattr
+
+"
+"2","The following object is masked from ‘package:base’:
+
+    xor
+
+"
+"2","Attaching package bit64
+"
+"2","package:bit64 (c) 2011-2012 Jens Oehlschlaegel
+"
+"2","creators: integer64 seq :
+"
+"2","coercion: as.integer64 as.vector as.logical as.integer as.double as.character as.bin
+"
+"2","logical operator: ! & | xor != == < <= >= >
+"
+"2","arithmetic operator: + - * / %/% %% ^
+"
+"2","math: sign abs sqrt log log2 log10
+"
+"2","math: floor ceiling trunc round
+"
+"2","querying: is.integer64 is.vector [is.atomic} [length] format print str
+"
+"2","values: is.na is.nan is.finite is.infinite
+"
+"2","aggregation: any all min max range sum prod
+"
+"2","cumulation: diff cummin cummax cumsum cumprod
+"
+"2","access: length<- [ [<- [[ [[<-
+"
+"2","combine: c rep cbind rbind as.data.frame
+"
+"2","WARNING don't use as subscripts
+"
+"2","WARNING semantics differ from integer
+"
+"2","for more help type ?bit64
+"
+"2","
+Attaching package: ‘bit64’
+
+"
+"2","The following object is masked from ‘package:bit’:
+
+    still.identical
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    :, %in%, is.double, match, order, rank
+
+"
+"1","[1]"
+"1"," ""fasttime is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""lubridate is already installed"""
+"1","
+"
+"2","
+Attaching package: ‘lubridate’
+
+"
+"2","The following objects are masked from ‘package:data.table’:
+
+    hour, isoweek, mday, minute, month, quarter, second, wday, week,
+    yday, year
+
+"
+"2","The following object is masked from ‘package:plyr’:
+
+    here
+
+"
+"2","The following object is masked from ‘package:base’:
+
+    date
+
+"
+"1","[1]"
+"1"," ""geosphere is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""caret is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""corrplot is already installed"""
+"1","
+"
+"2","corrplot 0.84 loaded
+"
+"1","[1]"
+"1"," ""leaflet.extras is already installed"""
+"1","
+"
+"2","Loading required package: leaflet
+"
+"1","[1]"
+"1"," ""magrittr is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""tidyr is already installed"""
+"1","
+"
+"2","
+Attaching package: ‘tidyr’
+
+"
+"2","The following object is masked from ‘package:magrittr’:
+
+    extract
+
+"
+"2","The following object is masked from ‘package:Matrix’:
+
+    expand
+
+"
+"1","[1]"
+"1"," ""reshape2 is already installed"""
+"1","
+"
+"2","
+Attaching package: ‘reshape2’
+
+"
+"2","The following object is masked from ‘package:tidyr’:
+
+    smiths
+
+"
+"2","The following objects are masked from ‘package:data.table’:
+
+    dcast, melt
+
+"
+"1","[1]"
+"1"," ""varhandle is already installed"""
+"1","
+"
+"1","[1]"
+"1"," ""xgboost is already installed"""
+"1","
+"
+"2","package ‘xgboost’ was built under R version 3.5.2"
+"2","
+Attaching package: ‘xgboost’
+
+"
+"2","The following object is masked from ‘package:dplyr’:
+
+    slice
+
+"
+"0","print(paste0('[', round(difftime(Sys.time(),start_time, units = 'secs'),1), 's]: ',"
+"0","             'All necessary packages installed and loaded'))"
+"1","[1]"
+"1"," ""[5.1s]: All necessary packages installed and loaded"""
+"1","
+"
