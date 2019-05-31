@@ -45,6 +45,56 @@ print(paste0('[', round(difftime(Sys.time(),start_time, units = 'secs'),1), 's]:
 
 ## 5. Feature Engineering
 
+##### Feature Engineering
+
+y <- final_train$y
+final_train$y <- NULL
+merged_df <- rbind(final_train, final_test)
+
+# *Days to end of month* assuming all the months have 30 days
+merged_df$days_to_end_of_month <- 30 - merged_df$day
+
+# Balance General Status -> 1 if positive, 0 if negative or 0
+
+positive_balance <- function(number){
+  is_positive = 0
+  if(number>0){is_positive <- 1}
+  return(is_positive)
+}
+merged_df$balance_general_status <- as.numeric(lapply(merged_df$balance,  FUN = positive_balance))
+
+
+# Quantity of loans 0, 1 or 2 (housing and personal)
+merged_df$quantity_loans <- merged_df$housing_yes+merged_df$loan_yes
+
+#Days_binned_weeks
+
+week_type <- function(day){
+  week_num=0
+  if(day < 7){
+    week_num <-1
+  }else if(day< 15){
+    week_num <-2
+  }else if(day<22){
+    week_num <-3
+  }else if(day<30){
+    week_num<-4
+  }else{week_num <-5}
+  return(week_num)
+}
+merged_df$week <- as.factor(as.numeric(lapply(merged_df$day, FUN = week_type)))
+dmy<-dummyVars("~.",data = merged_df)
+merged_df<-data.table(predict(dmy, newdata = merged_df))
+
+#Season Quarters
+merged_df$Q1 <- merged_df$month_jan+merged_df$month_feb+merged_df$month_mar
+merged_df$Q2 <- merged_df$month_may+merged_df$month_jun
+merged_df$Q3 <- merged_df$month_jul+merged_df$month_aug+merged_df$month_sep
+merged_df$Q4 <- merged_df$month_oct+merged_df$month_nov+merged_df$month_dec
+
+train_featured <- merged_df[1:nrow(train),]
+test_featured <- merged_df[(nrow(train)+1):nrow(merged_df),]
+
 ## 6. Modeling
 
 ## 1. Introduction
