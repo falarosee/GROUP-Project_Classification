@@ -486,40 +486,59 @@ test_featured <- merged_df[(nrow(train)+1):nrow(merged_df),]
 
 
 ## 6. Modeling
-```{r models}
-#Logistic Regression
+
+### Logistic Regression
+```{r}
 lm_over <- train_val(train_featured, "glm","over")
-lm_over$results
 lm_under <- train_val(train_featured, "glm","under")
-lm_under$results
 lm_S <- train_val(train_featured, "glm","SMOTE")
-lm_S$results
-
-#Random Forest
-rf_over <- train_val(train_featured, "ranger","over")
-rf_over$results
-rf_under <- train_val(train_featured, "ranger","under")
-rf_under$results
-rf_S <- train_val(train_featured, "ranger","SMOTE")
-rf_S$results
-
-#XGBoosting Tree
-xgb_over <- train_val(train_featured, "xgbTree","over")
-xgb_over$results
-xgb_under <- train_val(train_featured, "xgbTree","under")
-xgb_under$results
-xgb_S <- train_val(train_featured, "xgbTree","SMOTE")
-xgb_S$results
-
-####Regression with regularization
-glmnet_over <- train_val(train_featured, "glmnet","over")
-glmnet_over$results
-glmnet_under <- train_val(train_featured, "glmnet","under")
-glmnet_under$results
-glmnet_S <- train_val(train_featured, "glmnet","SMOTE")
-glmnet_S$results
 ```
 
+### Random Forest
+```{r}
+rf_over <- train_val(train_featured, "ranger","over")
+rf_under <- train_val(train_featured, "ranger","under")
+rf_S <- train_val(train_featured, "ranger","SMOTE")
+```
+
+### XGBoosting Tree
+```{r}
+xgb_over <- train_val(train_featured, "xgbTree","over")
+xgb_under <- train_val(train_featured, "xgbTree","under")
+xgb_S <- train_val(train_featured, "xgbTree","SMOTE")
+```
+
+### Regression with regularization
+```{r}
+glmnet_over <- train_val(train_featured, "glmnet","over")
+glmnet_under <- train_val(train_featured, "glmnet","under")
+glmnet_S <- train_val(train_featured, "glmnet","SMOTE")
+```
+
+### Results
+```{r}
+results <- resamples(list(
+    LMO = lm_over,
+    LMU = lm_under,
+    LMS = lm_S,
+    RFO = rf_over,
+    RFU = rf_under,
+    RFS = rf_S,
+    XGBO = xgb_over,
+    XGBU = xgb_under,
+    XGBS = xgb_S,
+    GLO = glmnet_over,
+    GLU = glmnet_under,
+    GLS = glmnet_S),
+)
+
+summary(results)
+```
+
+### Plot of Results
+```{r}
+bwplot(results, layout = c(4, 1), scales = list(relation="free"))
+```
 
 ## 7. Hyperparameter Tuning
 ```{r tuning}
