@@ -216,6 +216,123 @@ p11<- ggplot(data = tab, aes(x = education, y = perc, fill = y)) +
 labs(title = "Term Deposit Subscription by Education Level")+xlab("Education Level")+ ylab("Percent")
 p11
 ```
+
+### Job
+#### Job + Loan bar chart (count)
+```{r}
+p12<-ggplot(train, 
+           aes(x = job, 
+               fill = loan)) + 
+  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+theme(axis.text.x = element_text(angle=90))+
+  labs(title = "Job by Loan Status")+xlab("Job")+ ylab("Count")
+p12
+```
+
+#### Job + Default bar chart (count)
+```{r}
+p13<-ggplot(train, 
+            aes(x = job, 
+                fill = default)) + 
+  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+theme(axis.text.x = element_text(angle=90))+
+  labs(title = "Default Status by Job")+xlab("Job")+ ylab("Count")
+p13
+```
+
+#### Job + y bar chart (percent)
+```{r}
+mytable <- table(train$job, train$y)
+tab <- as.data.frame(prop.table(mytable, 2))
+colnames(tab) <-  c("job", "y", "perc")
+
+p14<-ggplot(data = tab, aes(x = job, y = perc, fill = y)) + 
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 1) + scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  labs(title = "Term Deposit Subscription by Job")+xlab("Job")+ ylab("Percent")
+p14
+```
+
+### Balance
+#### Balance + education box plot
+```{r}
+p15<-ggplot(train, 
+       aes(x = education, 
+           y = balance)) + geom_line(size = 1.5, 
+                                     color = "lightgrey") +
+  geom_boxplot(fill="dodgerblue3", color="dodgerblue4") +
+  labs(title = "Balance by Education Level")+xlab("Education")+ ylab("Balance")
+p15
+```
+
+### Balance + education scatter plot
+```{r}
+p16<-ggplot(train, 
+            aes(y = balance, 
+                x = education)) +  
+  geom_jitter(color = "dodgerblue4") + 
+  labs(title = "Balance Distribution by Education Level")+theme(axis.text.x = element_text(angle=90))+
+  xlab("Education")+ ylab("Balance")
+p16
+```
+
+#### Balance + job box plot
+```{r}
+p17<-ggplot(train, 
+            aes(x = job, 
+                y = balance)) + geom_line(size = 1.5, 
+                                          color = "lightgrey") +
+  geom_boxplot(fill="dodgerblue3", color="dodgerblue4") +
+  labs(title = "Balance by Kind of Job")+theme(axis.text.x = element_text(angle=90))+
+  xlab("Job")+ ylab("Balance")
+p17
+```
+
+#### Balance + job scatter plot
+```{r}
+p18<-ggplot(train, 
+       aes(y = balance, 
+           x = job)) +  
+  geom_jitter(color = "dodgerblue4") + 
+  labs(title = "Balance Distribution by Kind of Job")+theme(axis.text.x = element_text(angle=90))+
+  xlab("Job")+ ylab("Balance")
+p18
+```
+
+#### Duration + y
+```{r}
+p19<-ggplot(train, aes(x=as.factor(y), y=duration)) +
+  geom_boxplot(fill="dodgerblue3", color="dodgerblue4")+
+  theme_classic()+labs(title = "Call Duration by Term Deposit Subscription")+xlab("Term deposit")+
+  ylab("Call Duration (sec.)")
+p19
+```
+
+#### Pdays + y
+```{r}
+p20<-ggplot(train, aes(x=as.factor(y), y=pdays)) +
+  geom_boxplot(fill="dodgerblue3", color="dodgerblue4")+
+  theme_classic()+labs(title = "Days from last contact by Term Deposit Subscription")+xlab("Term deposit")+
+  ylab("Days from last contact")
+p20
+```
+
+#### Previous + y
+```{r}
+p21<-ggplot(train, aes(x=as.factor(y), y=previous)) +
+  geom_boxplot(fill="dodgerblue3", color="dodgerblue4")+
+  theme_classic()+labs(title = "Contacts before this Campaign by Term Deposit Subscription")+xlab("Term deposit")+
+  ylab("Contacts before this campaign")
+p21
+```
+
+#### Campaign + y
+```{r}
+p22<-ggplot(train, aes(x=as.factor(y), y=campaign)) +
+  geom_boxplot(fill="dodgerblue3", color="dodgerblue4")+
+  theme_classic()+labs(title = "Contacts during this Campaign by Term Deposit Subscription")+xlab("Term deposit")+
+  ylab("Contacts during this campaign")
+p22
+```
+
 ## 4. Baseline
 
 We dummy encode the factor variables to be able to run different models on the data.
@@ -258,8 +375,6 @@ rf$results
 ```
 
 ## 5. Feature Engineering
-
-##### Feature Engineering
 ```{r feature engineering}
 y <- final_train$y
 final_train$y <- NULL
