@@ -10,14 +10,11 @@ author: "Group E"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 start_time <- Sys.time()
 print(paste0('---START--- Starting at ',start_time))
-
 packages_list <- c('ggplot2',
                    'data.table'
                     )
-
 for (i in packages_list){
   if(!i%in%installed.packages()){
     install.packages(i, dependencies = TRUE)
@@ -28,7 +25,6 @@ for (i in packages_list){
     library(i, character.only = TRUE)
   }
 }
-
 print(paste0('[', round(difftime(Sys.time(),start_time, units = 'secs'),1), 's]: ',
              'All necessary packages installed and loaded'))
 ```
@@ -36,8 +32,54 @@ print(paste0('[', round(difftime(Sys.time(),start_time, units = 'secs'),1), 's]:
 # Classifying Term Deposits
 
 ## 1. Introduction
+This is the intro.
 
-## 2. Data Loading and Preprocessing 
+## 2. Data Loading and Preprocessing
+
+Here we load the necessary train and test data.
+
+```{r Load Data, include=FALSE}
+# Loading the Data
+train = fread("BankCamp_train.csv", stringsAsFactors = T)
+test = fread("BankCamp_test.csv", stringsAsFactors = T)
+```
+
+These are the first few rows of the training data.
+
+```{r head}
+head(train)
+```
+
+This is the structure of the data.
+
+```{r str}
+str(train)
+```
+
+This is the summary of the data.
+
+```{r summary}
+summary(train)
+```
+
+Now we check if there are missing values in any column:
+
+```{r missing}
+sapply(train, function(x) sum(is.na(x)))
+```
+
+Finally we check if there are any duplicate values:
+
+```{r duplicated}
+any(duplicated(train))
+```
+
+Now we set the types for numerical variables:
+
+```{r numerical}
+train[ , which(sapply(train, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(train, is.integer)]
+test[ , which(sapply(test, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(test, is.integer)]
+```
 
 ## 3. Data Exploration
 
@@ -96,54 +138,3 @@ train_featured <- merged_df[1:nrow(train),]
 test_featured <- merged_df[(nrow(train)+1):nrow(merged_df),]
 
 ## 6. Modeling
-
-## 1. Introduction
-This is the intro.
-
-## 2. Data Loading and Preprocessing
-
-Here we load the necessary train and test data.
-
-```{r Load Data, include=FALSE}
-# Loading the Data
-train = fread("BankCamp_train.csv", stringsAsFactors = T)
-test = fread("BankCamp_test.csv", stringsAsFactors = T)
-```
-
-These are the first few rows of the training data.
-
-```{r head}
-head(train)
-```
-
-This is the structure of the data.
-
-```{r str}
-str(train)
-```
-
-This is the summary of the data.
-
-```{r summary}
-summary(train)
-```
-
-Now we check if there are missing values in any column:
-
-```{r missing}
-sapply(train, function(x) sum(is.na(x)))
-```
-
-Finally we check if there are any duplicate values:
-
-```{r duplicated}
-any(duplicated(train))
-```
-
-Now we set the types for numerical variables:
-
-```{r numerical}
-train[ , which(sapply(train, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(train, is.integer)]
-test[ , which(sapply(test, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(test, is.integer)]
-```
-
