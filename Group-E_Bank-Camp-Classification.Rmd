@@ -89,6 +89,133 @@ str(train)
 
 ## 3. Data Exploration
 
+### Job
+##### Job univariate bar chart (count)
+```{r}
+sort(summary(train$job), dec=T)/nrow(train)
+
+p1<-ggplot(train, aes(x=job))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+ labs(title = "Distribution by Kind of Job")+
+  xlab("Job")+ ylab("Count")
+train[, job:=factor(job, levels=names(sort(summary(train$job), dec=T)))]
+levels(train$job)
+p1
+```
+
+### Marital
+#### Marital univariate bar chart (count)
+```{r}
+sort(summary(train$marital), dec=T)/nrow(train)
+
+p2<-ggplot(train, aes(x=marital))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+ labs(title = "Distribution by Marital Status")+
+  xlab("Marital Status")+ ylab("Count")
+train[, marital:=factor(marital, levels=names(sort(summary(train$marital), dec=T)))]
+levels(train$marital)
+p2
+```
+
+### Education
+##### Education univariate bar chart (count)
+```{r}
+sort(summary(train$education), dec=T)/nrow(train)
+
+p3<-ggplot(train, aes(x=education))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+labs(title = "Distribution by Education Level")+
+  xlab("Education Level")+ ylab("Count")
+train[, education:=factor(education, levels=names(sort(summary(train$education), dec=T)))]
+levels(train$education)
+p3
+```
+
+### Month
+#### Month univariate bar chart (count)
+```{r}
+sort(summary(train$month), dec=T)/nrow(train)
+train$month <- factor(train$month, levels = c( "jan", "feb", "mar", "apr","may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"))
+p4<-ggplot(train, aes(x=month))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=90))+labs(title = "Distribution by Month")+
+  xlab("Month")+ ylab("Count")
+levels(train$month)
+p4
+```
+### Age
+#### Age univariate bar chart (count)
+```{r}
+sort(summary(train$age), dec=T)/nrow(train)
+p5<-ggplot(train, aes(x=age))+geom_histogram(fill="dodgerblue4", colour="dodgerblue4", bins=30)+
+  theme(axis.text.x = element_text(angle=0, colour = "dodgerblue4"))+
+  labs(title = "Distribution by Age")+xlab("Age")+ ylab("Count")
+levels(train$age)
+p5
+```
+
+### Bivariate Analysis
+#### Marital 
+```{r}
+#Marital + Loan bar chart (count)
+p6<-ggplot(train, 
+           aes(x = marital, 
+               fill = loan)) + 
+  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
+  labs(title = "Loan Acquisition by Marital Status")+xlab("Marital Status")+ ylab("Count")
+p6
+```
+
+#### Marital + Default bar chart (count)
+```{r}
+p7<-ggplot(train, 
+             aes(x = marital, 
+                 fill = default)) + 
+    geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
+  labs(title = "Default by Marital Status")+xlab("Marital Status")+ ylab("Count")
+p7
+```
+
+#### Marital + y bar chart (percent)
+```{r}
+mytable <- table(train$marital, train$y)
+tab <- as.data.frame(prop.table(mytable, 2))
+colnames(tab) <-  c("marital", "y", "perc")
+
+p8<-ggplot(data = tab, aes(x = marital, y = perc, fill = y)) + 
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 1) + scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
+  labs(title = "Term Deposit Subscription by Marital Status")+xlab("Marital Status")+ ylab("Percent")
+p8
+```
+
+### Education
+#### Education + Loan bar chart (count)
+```{r}
+p9<-ggplot(train, 
+           aes(x = education, 
+               fill = loan)) + 
+  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
+  labs(title = "Loan Acquisition by Education Level")+xlab("Education Level")+ ylab("Count")
+p9
+```
+
+### Education + Default bar chart (count)
+```{r}
+p10<-ggplot(train, 
+           aes(x = education, 
+               fill = default)) + 
+  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
+  labs(title = "Default by Education Level")+xlab("Education Level")+ ylab("Count")
+p10
+```
+
+#### Education + y bar chart (percent)
+```{r}
+mytable <- table(train$education, train$y)
+tab <- as.data.frame(prop.table(mytable, 2))
+colnames(tab) <-  c("education", "y", "perc")
+
+p11<- ggplot(data = tab, aes(x = education, y = perc, fill = y)) + 
+  geom_bar(stat = 'identity', position = 'dodge', alpha = 1) + scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
+labs(title = "Term Deposit Subscription by Education Level")+xlab("Education Level")+ ylab("Percent")
+p11
+```
 ## 4. Baseline
 
 We dummy encode the factor variables to be able to run different models on the data.
