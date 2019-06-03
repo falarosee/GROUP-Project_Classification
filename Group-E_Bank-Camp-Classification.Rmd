@@ -12,9 +12,13 @@ author: "Group E"
 knitr::opts_chunk$set(echo = TRUE)
 start_time <- Sys.time()
 print(paste0('---START--- Starting at ',start_time))
-packages_list <- c('ggplot2',
-                   'data.table'
-                    )
+packages_list <- c(
+  'caret',
+  'data.table',
+  'ggplot2',
+  'lubridate',
+  'MLmetrics')
+
 for (i in packages_list){
   if(!i%in%installed.packages()){
     install.packages(i, dependencies = TRUE)
@@ -68,22 +72,64 @@ Now we check if there are missing values in any column:
 sapply(train, function(x) sum(is.na(x)))
 ```
 
-Finally we check if there are any duplicate values:
+We also check if there are any duplicate values:
 
 ```{r duplicated}
 any(duplicated(train))
 ```
 
-Now we set the types for numerical variables:
+Finally we set the types for numerical variables:
 
 ```{r numerical}
 train[ , which(sapply(train, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(train, is.integer)]
 test[ , which(sapply(test, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(test, is.integer)]
+
+str(train)
 ```
 
 ## 3. Data Exploration
 
 ## 4. Baseline
+
+We dummy encode the factor variables to be able to run different models on the data.
+
+```{r dummy}
+dummy<-dummyVars(formula= ~., data = train[, -"y"], fullRank=T, sep = "_")
+final_train<-data.table(predict(dummy, newdata = train[, -"y"]))
+final_train$y<-train$y
+final_test<-data.table(predict(dummy, newdata = test))
+head(final_train)
+```
+
+Now we will run a simple logistic regression as a baseline, this will serve as a way of knowing if our feature engineering steps improve performance.
+
+```{r baseline}
+tc<-trainControl(
+  method = "cv",
+  number=5,
+  savePredictions = TRUE,
+  classProbs=TRUE,
+  summaryFunction = prSummary)
+
+ini<-now()
+lm <- train(y~ ., data = final_train, method = "glm", metric="AUC", trControl=tc)
+print(now()-ini)
+lm
+```
+So our Sensitivity or Recall is very high, meaning that we correctly classify 97% of the yes cases, our precision on the other hand is 92%.
+
+Now we run a random forest as an alternative baseline.
+
+```{r}
+ini<-now()
+rf <- train(y~ ., data = final_train, method = "ranger", metric="AUC", trControl=tc)
+print(now()-ini)
+rf
+```
+
+```{r}
+rf$results
+```
 
 ## 5. Feature Engineering
 
