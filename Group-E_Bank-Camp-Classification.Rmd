@@ -36,7 +36,9 @@ print(paste0('[', round(difftime(Sys.time(),start_time, units = 'secs'),1), 's]:
 # Classifying Term Deposits
 
 ## 1. Introduction
-This is the intro.
+The dataset provided gathers information related to telemarketing campaigns applied by a banking institution. It is important to mention that a client was contacted a few times in order to see if the product (term deposit) would be or not subscribed.
+
+The goal of the project is to predict by using a classification model if a client will subscribe for a term deposit, having as a target variable a binary parameter with possible outcomes 'yes' or 'no'.
 
 ## 2. Data Loading and Preprocessing
 
@@ -184,3 +186,9 @@ train_featured <- merged_df[1:nrow(train),]
 test_featured <- merged_df[(nrow(train)+1):nrow(merged_df),]
 
 ## 6. Modeling
+
+## 7. Hyperparameter Tuning
+
+## 8. Results Evaluation
+
+## 9. Extras
