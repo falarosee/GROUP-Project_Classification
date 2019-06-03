@@ -14,6 +14,7 @@ start_time <- Sys.time()
 print(paste0('---START--- Starting at ',start_time))
 packages_list <- c(
   'caret',
+  'corrplot',
   'data.table',
   'ggplot2',
   'lubridate',
@@ -88,6 +89,33 @@ str(train)
 ```
 
 ## 3. Data Exploration
+
+### Correlation Plot
+```{r}
+numVars<-c('age','balance','day', 'duration', 'campaign', 'previous')
+
+trainCorrplot<- train[,..numVars]
+corresult = cor(trainCorrplot)
+corrplot(corresult,  type="upper")
+```
+
+### Distributions of numerical variables
+```{r}
+for(i in numVars){
+  counts <- table(train[,..i])
+  barplot(counts, main = i, col = "dodgerblue4")
+}
+```
+
+### Distributions of categorical variables
+```{r}
+catVars <- colnames(train[,-..numVars])
+
+for(i in catVars){
+  counts <- table(train[,..i])
+  barplot(counts, main = i,  col = "dodgerblue4")
+}
+```
 
 ### Job
 ##### Job univariate bar chart (count)
