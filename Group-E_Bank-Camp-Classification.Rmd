@@ -16,6 +16,7 @@ packages_list <- c(
   'caret',
   'corrplot',
   'data.table',
+  'DMwR',
   'ggplot2',
   'lubridate',
   'MLmetrics')
@@ -366,40 +367,67 @@ p22
 We dummy encode the factor variables to be able to run different models on the data.
 
 ```{r dummy}
-dummy<-dummyVars(formula= ~., data = train[, -"y"], fullRank=T, sep = "_")
+dummy<-dummyVars(formula= ~., data = train[, -"y"], sep = "_")
 final_train<-data.table(predict(dummy, newdata = train[, -"y"]))
 final_train$y<-train$y
 final_test<-data.table(predict(dummy, newdata = test))
 head(final_train)
 ```
 
+Now we define our training function, it will perform a 5 fold cross validation on 80% of the training data and then a final validation on the remaining 20% of the data that acts as a holdout.
+
+```{r}
+train_val<- function(train_dt, model, sampling){
+  tc<-trainControl(
+    method = "cv",
+    number=5,
+    savePredictions = TRUE,
+    classProbs=TRUE,
+    summaryFunction = prSummary)
+
+  trainIndex <- createDataPartition(train_dt$y, p = .8, list = FALSE)
+  model_train <- train_dt[ trainIndex,]
+  holdout  <- train_dt[-trainIndex,]
+  
+  if(!missing(sampling)){
+    if(sampling == 'over'){
+      model_train<-upSample(x = model_train[, -"y"],y = model_train$y, yname="y")
+    }
+    else if(sampling == 'under'){
+      model_train<-downSample(x = model_train[, -"y"],y = model_train$y, yname="y")
+    }
+    else {
+      model_train<-SMOTE(y ~ ., data  = model_train) 
+    }
+  }
+  
+  ini<-now()
+  model<- train(y~ ., data = model_train, method = model, metric="AUC", trControl=tc)
+  print("Cross Validation Scores having No as the positive class")
+  print(model$results)
+  print(now()-ini)
+  
+  predicted = predict(model, newdata = holdout)
+  
+  print("Holdout Scores")
+  print(confusionMatrix(table(predicted, holdout$y), positive="yes", mode="everything"))
+  
+  return(model)
+}
+```
+
 Now we will run a simple logistic regression as a baseline, this will serve as a way of knowing if our feature engineering steps improve performance.
 
 ```{r baseline}
-tc<-trainControl(
-  method = "cv",
-  number=5,
-  savePredictions = TRUE,
-  classProbs=TRUE,
-  summaryFunction = prSummary)
-ini<-now()
-lm <- train(y~ ., data = final_train, method = "glm", metric="AUC", trControl=tc)
-print(now()-ini)
-lm
+lm <- train_val(final_train, "glm")
 ```
-So our Sensitivity or Recall is very high, meaning that we correctly classify 97% of the yes cases, our precision on the other hand is 92%.
+
+So our Sensitivity or Recall is very low based on the "yes" class, meaning that we correctly classify a really small set of the "yes" cases.
 
 Now we run a random forest as an alternative baseline.
 
 ```{r}
-ini<-now()
-rf <- train(y~ ., data = final_train, method = "ranger", metric="AUC", trControl=tc)
-print(now()-ini)
-rf
-```
-
-```{r}
-rf$results
+rf <- train_val(final_train, "ranger")
 ```
 
 ## 5. Feature Engineering
