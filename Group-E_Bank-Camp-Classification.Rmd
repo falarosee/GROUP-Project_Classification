@@ -18,7 +18,6 @@ packages_list <- c(
   'ggplot2',
   'lubridate',
   'MLmetrics')
-
 for (i in packages_list){
   if(!i%in%installed.packages()){
     install.packages(i, dependencies = TRUE)
@@ -85,7 +84,6 @@ Finally we set the types for numerical variables:
 ```{r numerical}
 train[ , which(sapply(train, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(train, is.integer)]
 test[ , which(sapply(test, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(test, is.integer)]
-
 str(train)
 ```
 
@@ -112,7 +110,6 @@ tc<-trainControl(
   savePredictions = TRUE,
   classProbs=TRUE,
   summaryFunction = prSummary)
-
 ini<-now()
 lm <- train(y~ ., data = final_train, method = "glm", metric="AUC", trControl=tc)
 print(now()-ini)
@@ -136,7 +133,7 @@ rf$results
 ## 5. Feature Engineering
 
 ##### Feature Engineering
-
+```{r feature engineering}
 y <- final_train$y
 final_train$y <- NULL
 merged_df <- rbind(final_train, final_test)
@@ -185,10 +182,30 @@ merged_df$Q4 <- merged_df$month_oct+merged_df$month_nov+merged_df$month_dec
 train_featured <- merged_df[1:nrow(train),]
 test_featured <- merged_df[(nrow(train)+1):nrow(merged_df),]
 
+```
+
+
+
 ## 6. Modeling
+```{r models}
+
+```
+
 
 ## 7. Hyperparameter Tuning
+```{r tuning}
+
+```
+
 
 ## 8. Results Evaluation
+```{r results evaluation}
+
+```
+
 
 ## 9. Extras
+```{r extras}
+
+```
+
