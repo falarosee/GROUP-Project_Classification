@@ -474,7 +474,7 @@ merged_df<-data.table(predict(dmy, newdata = merged_df))
 #Season Quarters
 merged_df$Q1 <- merged_df$month_jan+merged_df$month_feb+merged_df$month_mar
 merged_df$Q2 <- merged_df$month_may+merged_df$month_jun
-merged_df$Q3 <- merged_df$month_jul+merged_df$month_aug+merged_df$month_sep
+merged_df$Q3 <- merged_df$month_apr+merged_df$month_jul+merged_df$month_aug+merged_df$month_sep
 merged_df$Q4 <- merged_df$month_oct+merged_df$month_nov+merged_df$month_dec
 
 train_featured <- merged_df[1:nrow(train),]
