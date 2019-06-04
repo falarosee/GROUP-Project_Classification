@@ -9,8 +9,7 @@ author: "Group E"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(echo = TRUE, COMMENT = NA, warning = FALSE)
 start_time <- Sys.time()
 print(paste0('---START--- Starting at ',start_time))
 packages_list <- c(
@@ -36,8 +35,6 @@ for (i in packages_list){
 print(paste0('[', round(difftime(Sys.time(),start_time, units = 'secs'),1), 's]: ',
              'All necessary packages installed and loaded'))
 ```
-
-# Classifying Term Deposits
 
 ## 1. Introduction
 The dataset provided gathers information related to telemarketing campaigns applied by a banking institution. It is important to mention that a client was contacted a few times in order to see if the product (term deposit) would be or not subscribed.
@@ -121,22 +118,17 @@ In EDA we first create a correlation plot to see if there is any significant cor
 
 ```{r}
 numerical <- select_if(train,is.numeric)
-cors <- cor(numerical)
-corr_plot <- ggcorr(cors, label_round = 2, label = TRUE)
+corr_plot <- ggcorr(numerical,  label_round=2, label = TRUE)
 corr_plot
 ```
 
 As we can see, no variables have significant correlations, we therefore do not need to transform or drop variables based on multivariate correlation between numeric explanatory variables. 
 
-### Univariate Analysis
+### Univariate Analysi
 
 ```{r}
-numVars <- c('age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous')
-
-for(i in numVars){
-  counts <- table(train[,..i])
-  barplot(counts, main = i, col = "dodgerblue4")
-}
+num_y <- train[, c('age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous','y')]
+ggpairs(num_y[,1:8], title = "Distribution & Correlation graph", ggplot2::aes(colour=y, alpha=1/100))
 ```
 
 ### Categorical Variables
@@ -145,13 +137,26 @@ Next we check univariate distributions of each variable, to see if the numerical
 
 ### Univariate Analysis
 
+### Age
+#### Age univariate bar chart (count)
+```{r}
+sort(summary(train$age), dec=T)/nrow(train)
+p5<-ggplot(train, aes(x=age))+geom_histogram(fill="dodgerblue4", colour="dodgerblue4", bins=30)+
+  theme(axis.text.x = element_text(angle=0))+
+  labs(title = "Distribution by Age")+xlab("Age")+ ylab("Count")
+levels(train$age)
+p5
+```
+
+We see the age distribution skewed to the right, with the majority appliactions between 30 and 40 years of age.
+
 ### Job
 ##### Job univariate bar chart (count)
 ```{r}
 sort(summary(train$job), dec=T)/nrow(train)
 
 p1<-ggplot(train, aes(x=job))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
-  theme(axis.text.x = element_text(angle=0))+ labs(title = "Distribution by Kind of Job")+
+  theme(axis.text.x = element_text(angle=90))+ labs(title = "Distribution by Kind of Job")+
   xlab("Job")+ ylab("Count")
 train[, job:=factor(job, levels=names(sort(summary(train$job), dec=T)))]
 levels(train$job)
@@ -172,7 +177,6 @@ levels(train$marital)
 p2
 ```
 Most of the historic applicants were married, with a fraction being divorced.
-
 
 ### Education
 ##### Education univariate bar chart (count)
@@ -199,29 +203,59 @@ p4<-ggplot(train, aes(x=month))+geom_bar(stat='count',fill="dodgerblue4", colour
 levels(train$month)
 p4
 ```
+
 We see spikes of applications in may, sustained throughout the summer and dropping during the rest of the year.
 
-### Age
-#### Age univariate bar chart (count)
+### Loan
+#### Loan univariate bar chart (count)
 ```{r}
-sort(summary(train$age), dec=T)/nrow(train)
-p5<-ggplot(train, aes(x=age))+geom_histogram(fill="dodgerblue4", colour="dodgerblue4", bins=30)+
-  theme(axis.text.x = element_text(angle=0, colour = "dodgerblue4"))+
-  labs(title = "Distribution by Age")+xlab("Age")+ ylab("Count")
-levels(train$age)
-p5
-```
-We see the age distribution skewed to the right, with the majority appliactions between 30 and 40 years of age.
+sort(summary(train$loan), dec=T)/nrow(train)
 
+p23<-ggplot(train, aes(x=loan))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+labs(title = "Loans Acquired")+
+  xlab("Loans")+ ylab("Count")
+p23
+```
+
+### Housing Loan
+#### Housing Loan univariate bar chart (count)
+```{r}
+sort(summary(train$housing), dec=T)/nrow(train)
+
+p24<-ggplot(train, aes(x=housing))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+labs(title = "Housing Loan Acquired")+
+  xlab("Housing Loan")+ ylab("Count")
+p24
+```
+
+### Contact 
+#### Contact univariate bar chart (count)
+```{r}
+sort(summary(train$contact), dec=T)/nrow(train)
+
+p24<-ggplot(train, aes(x=contact))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+labs(title = "Contact Type")+
+  xlab("Contact")+ ylab("Count")
+p24
+```
+
+### Previous Campaign Outcome 
+#### Previous Campaign  univariate bar chart (count)
+```{r}
+sort(summary(train$poutcome), dec=T)/nrow(train)
+
+p24<-ggplot(train, aes(x=poutcome))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+labs(title = "Previous Campaign Outcome")+
+  xlab("Outcome")+ ylab("Count")
+p24
+```
 
 ### Bivariate Analysis
 In the bivariate analysis, we see what proportion of applicants have subscribed and not subscribed according to each variable.
 
-
-
 #### Marital 
-##### Marital + Loan bar chart (count)
 ```{r}
+#Marital + Loan bar chart (count)
 p6<-ggplot(train, 
            aes(x = marital, 
                fill = loan)) + 
@@ -230,7 +264,6 @@ p6<-ggplot(train,
 p6
 ```
 We see that there seems to be a linear correlation between 
-
 
 #### Marital + Default bar chart (count)
 ```{r}
@@ -407,8 +440,7 @@ p22
 The coefficient of variation is a dimensionless meassure of dispersion in data, the lower the value the less dispersion a feature has.
 
 ```{r}
-numeric_variables<-names(train)[sapply(train, is.numeric)]
-
+numeric_variables<-names(numerical)
 sd_numeric_variables<-sapply(train[,numeric_variables, with=F], sd)
 cv_numeric_variables<-sd_numeric_variables/colMeans(train[,numeric_variables, with=F])
 
