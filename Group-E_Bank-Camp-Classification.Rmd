@@ -10,6 +10,7 @@ author: "Group E"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
 start_time <- Sys.time()
 print(paste0('---START--- Starting at ',start_time))
 packages_list <- c(
@@ -125,14 +126,13 @@ corr_plot <- ggcorr(cors, label_round = 2, label = TRUE)
 corr_plot
 ```
 
-
-
-
 As we can see, no variables have significant correlations, we therefore do not need to transform or drop variables based on multivariate correlation between numeric explanatory variables. 
 
 ### Univariate Analysis
 
 ```{r}
+numVars <- c('age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous')
+
 for(i in numVars){
   counts <- table(train[,..i])
   barplot(counts, main = i, col = "dodgerblue4")
@@ -220,8 +220,8 @@ In the bivariate analysis, we see what proportion of applicants have subscribed 
 
 
 #### Marital 
+##### Marital + Loan bar chart (count)
 ```{r}
-#Marital + Loan bar chart (count)
 p6<-ggplot(train, 
            aes(x = marital, 
                fill = loan)) + 
@@ -402,9 +402,43 @@ p22<-ggplot(train, aes(x=as.factor(y), y=campaign)) +
   ylab("Contacts during this campaign")
 p22
 ```
+### Coefficient of Variation
+
+The coefficient of variation is a dimensionless meassure of dispersion in data, the lower the value the less dispersion a feature has.
+
+```{r}
+numeric_variables<-names(train)[sapply(train, is.numeric)]
+
+sd_numeric_variables<-sapply(train[,numeric_variables, with=F], sd)
+cv_numeric_variables<-sd_numeric_variables/colMeans(train[,numeric_variables, with=F])
+
+ggplot(data.table(var=names(cv_numeric_variables),cv=cv_numeric_variables),
+       aes(var,fill=cv))+geom_bar()+coord_polar()+scale_fill_gradient(low='white', high = 'dodgerblue4')
+
+```
+Viewing variables with less than a 0.05 coefficient of variation. There are none.
+
+```{r}
+cv_numeric_variables[cv_numeric_variables < 0.05]
+```
+### Linear Dependencies
+Caret uses QR decomposition to enumerate sets of linear combinations and therefore, remove them, however there are none.
+
+```{r}
+lc<-findLinearCombos(train[, ..numeric_variables])
+lc
+```
 
 ## 4. Baseline
 
+### Setting up Preprocessing: Centering, Scaling and performing a Yeo Johnson transformation
+To reduce the weight/importance of certain features due to their scale, we center them and scale them. We also reduce skewness by performing a Yeo Johnson transformation. This combination will be performed on each model training.
+```{r}
+pp<-c("center", "scale", "YeoJohnson")
+preProcess(train, method =pp)
+```
+
+### Dummy Encoding
 We dummy encode the factor variables to be able to run different models on the data.
 
 ```{r dummy}
@@ -415,7 +449,7 @@ final_test<-data.table(predict(dummy, newdata = test))
 head(final_train)
 ```
 
-Now we define our training function, it will perform a 5 fold cross validation on 80% of the training data and then a final validation on the remaining 20% of the data that acts as a holdout.
+Now we define our training function, it will perform a 5 fold cross validation on 80% of the training data and then a final validation on the remaining 20% of the data that acts as a holdout. It also does the aforementioned preprocessing.
 
 ```{r}
 train_val<- function(train_dt, model, sampling){
@@ -443,7 +477,7 @@ train_val<- function(train_dt, model, sampling){
   }
   
   ini<-now()
-  model<- train(y~ ., data = model_train, method = model, metric="AUC", trControl=tc)
+  model<- train(y~ ., data = model_train, method = model, metric="AUC", trControl=tc, preProcess=pp)
   message("Cross Validation Scores having Yes as the positive class")
   message(model$results)
   message("Train + Predict time:")
@@ -473,29 +507,34 @@ rf <- train_val(final_train, "ranger")
 ```
 
 ## 5. Feature Engineering
+Here we merge the two datasets to perform multiple feature engineering steps
 ```{r feature engineering}
 y <- final_train$y
 final_train$y <- NULL
 merged_df <- rbind(final_train, final_test)
+```
 
-# *Days to end of month* assuming all the months have 30 days
+#### Days to end of month assuming all the months have 30 days
+```{r}
 merged_df$days_to_end_of_month <- 30 - merged_df$day
-
-# Balance General Status -> 1 if positive, 0 if negative or 0
-
+```
+#### Balance General Status -> 1 if positive, 0 if negative or 0
+```{r}
 positive_balance <- function(number){
   is_positive = 0
   if(number>0){is_positive <- 1}
   return(is_positive)
 }
 merged_df$balance_general_status <- as.numeric(lapply(merged_df$balance,  FUN = positive_balance))
+```
 
-
-# Quantity of loans 0, 1 or 2 (housing and personal)
+#### Quantity of loans 0, 1 or 2 (housing and personal)
+```{r}
 merged_df$quantity_loans <- merged_df$housing_yes+merged_df$loan_yes
+```
 
-#Days_binned_weeks
-
+####Days_binned_weeks
+```{r}
 week_type <- function(day){
   week_num=0
   if(day < 7){
@@ -512,8 +551,10 @@ week_type <- function(day){
 merged_df$week <- as.factor(as.numeric(lapply(merged_df$day, FUN = week_type)))
 dmy<-dummyVars("~.",data = merged_df)
 merged_df<-data.table(predict(dmy, newdata = merged_df))
+```
 
-#Season Quarters
+#### Season Quarters
+```{r}
 merged_df$Q1 <- merged_df$month_jan+merged_df$month_feb+merged_df$month_mar
 merged_df$Q2 <- merged_df$month_apr+merged_df$month_may+merged_df$month_jun
 merged_df$Q3 <- merged_df$month_jul+merged_df$month_aug+merged_df$month_sep
@@ -522,36 +563,33 @@ merged_df$Q4 <- merged_df$month_oct+merged_df$month_nov+merged_df$month_dec
 train_featured <- merged_df[1:nrow(train),]
 train_featured$y <- y
 test_featured <- merged_df[(nrow(train)+1):nrow(merged_df),]
-
 ```
-
-
 
 ## 6. Modeling
 
 ### Logistic Regression
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE}
 lm_over <- train_val(train_featured, "glm","over")
 lm_under <- train_val(train_featured, "glm","under")
 lm_S <- train_val(train_featured, "glm","SMOTE")
 ```
 
 ### Random Forest
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE}
 rf_over <- train_val(train_featured, "ranger","over")
 rf_under <- train_val(train_featured, "ranger","under")
 rf_S <- train_val(train_featured, "ranger","SMOTE")
 ```
 
 ### XGBoosting Tree
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE}
 xgb_over <- train_val(train_featured, "xgbTree","over")
 xgb_under <- train_val(train_featured, "xgbTree","under")
 xgb_S <- train_val(train_featured, "xgbTree","SMOTE")
 ```
 
 ### Regression with regularization
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE}
 glmnet_over <- train_val(train_featured, "glmnet","over")
 glmnet_under <- train_val(train_featured, "glmnet","under")
 glmnet_S <- train_val(train_featured, "glmnet","SMOTE")
@@ -571,7 +609,7 @@ results <- resamples(list(
     XGBS = xgb_S,
     GLO = glmnet_over,
     GLU = glmnet_under,
-    GLS = glmnet_S),
+    GLS = glmnet_S)
 )
 
 summary(results)
@@ -579,23 +617,81 @@ summary(results)
 
 ### Plot of Results
 ```{r}
-bwplot(results, layout = c(4, 1), scales = list(relation="free"))
+bwplot(results, layout = c(2, 1), scales = list(relation="free"))
 ```
+Based on this, we realize that the best performing model is the Random Forest with SMOTE sampling.
 
 ## 7. Hyperparameter Tuning
+Finally we perform a cross validated, randomized grid search on the chosen random forest in order to define the final model, optimizing for Recall.
+
 ```{r tuning}
+grid<-expand.grid(
+  mtry=c(16,32,63),
+  splitrule=c('extratrees', 'gini'),
+  min.node.size=c(1,3,5)
+)
 
+tc<-trainControl(
+  method = "repeatedcv",
+  number=5,
+  repeats = 2,
+  savePredictions = TRUE,
+  summaryFunction = prSummary,
+  classProbs=TRUE,
+  search = "random"
+)
+
+ini<-now()
+
+model_train<-SMOTE(y ~ ., data  = train_featured) 
+
+grid_rf <- train(
+  y ~ .,
+  data = model_train,
+  method = "ranger",
+  num.trees=500,
+  tuneGrid = grid,
+  trControl = tc,
+  metric = "Recall",
+  tuneLength = 5,
+  verbose = TRUE,
+  importance = "impurity",
+  preProcess=pp
+)
+
+print(now()-ini)
+
+grid_rf
 ```
 
-
-## 8. Results Evaluation
-```{r results evaluation}
-
+```{r}
+grid_rf$bestTune
 ```
 
-
-## 9. Extras
-```{r extras}
-
+```{r}
+grid_rf$finalModel
 ```
 
+```{r}
+plot(grid_rf)
+```
+
+```{r}
+plot(varImp(grid_rf), top = 20)
+```
+
+## 8. Predictions
+We predict on the test set, add the predictions to it and create our predictions file.
+```{r predictions}
+predicted <- predict(grid_rf, newdata = test_featured)
+df_pred<-cbind(test, predicted)
+head(df_pred)
+```
+
+```{r}
+fwrite(df_pred[,c("predicted")],"predictions.csv")
+```
+
+## 9. Conclusions
+
+We conclude...
