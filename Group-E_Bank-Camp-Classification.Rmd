@@ -17,6 +17,8 @@ packages_list <- c(
   'corrplot',
   'data.table',
   'DMwR',
+  'dplyr',
+  'GGally',
   'ggplot2',
   'lubridate',
   'MLmetrics')
@@ -109,11 +111,6 @@ p1
 ### Correlation Plot
 
 In EDA we first create a correlation plot to see if there is any significant correlation between explanatory variables.
-
-```{r}
-library(GGally)
-library(dplyr)
-```
 
 ```{r}
 numerical <- select_if(train,is.numeric)
