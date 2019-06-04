@@ -21,6 +21,7 @@ packages_list <- c(
   'GGally',
   'ggplot2',
   'lubridate',
+  'MASS', # for stepAIC (stepwise)
   'MLmetrics')
 for (i in packages_list){
   if(!i%in%installed.packages()){
@@ -598,6 +599,17 @@ test_featured <- merged_df[(nrow(train)+1):nrow(merged_df),]
 ```
 
 ## 6. Modeling
+
+# Stepwise function to analyze relevant features based in logistic regression
+
+```{r}
+glm_0<-glm(formula = y~., 
+           data=train_featured,
+           family=binomial)
+
+step_lm_over <- stepAIC(glm_0, direction = "both", trace = F)
+summary(step_lm_over)
+```
 
 ### Logistic Regression
 ```{r, message=FALSE}
