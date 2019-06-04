@@ -45,10 +45,16 @@ The goal of the project is to predict by using a classification model if a clien
 
 Here we load the necessary train and test data.
 
-```{r Load Data, include=FALSE}
-# Loading the Data
+```{r load}
 train = fread("BankCamp_train.csv", stringsAsFactors = T)
 test = fread("BankCamp_test.csv", stringsAsFactors = T)
+```
+
+Here we switch the order of the factors, to get metrics related to the yes target.
+
+```{r change_factors}
+train$y <- factor(train$y, levels = c("yes", "no"))
+test$y <- factor(test$y, levels = c("yes", "no"))
 ```
 
 These are the first few rows of the training data.
@@ -403,14 +409,15 @@ train_val<- function(train_dt, model, sampling){
   
   ini<-now()
   model<- train(y~ ., data = model_train, method = model, metric="AUC", trControl=tc)
-  print("Cross Validation Scores having No as the positive class")
-  print(model$results)
-  print(now()-ini)
+  message("Cross Validation Scores having Yes as the positive class")
+  message(model$results)
+  message("Train + Predict time:")
+  message(now()-ini)
   
   predicted = predict(model, newdata = holdout)
   
-  print("Holdout Scores")
-  print(confusionMatrix(table(predicted, holdout$y), positive="yes", mode="everything"))
+  message("Holdout Scores")
+  message(confusionMatrix(table(predicted, holdout$y), positive="yes", mode="everything"))
   
   return(model)
 }
@@ -488,28 +495,28 @@ test_featured <- merged_df[(nrow(train)+1):nrow(merged_df),]
 ## 6. Modeling
 
 ### Logistic Regression
-```{r}
+```{r, message=FALSE, warning=FALSE}
 lm_over <- train_val(train_featured, "glm","over")
 lm_under <- train_val(train_featured, "glm","under")
 lm_S <- train_val(train_featured, "glm","SMOTE")
 ```
 
 ### Random Forest
-```{r}
+```{r, message=FALSE, warning=FALSE}
 rf_over <- train_val(train_featured, "ranger","over")
 rf_under <- train_val(train_featured, "ranger","under")
 rf_S <- train_val(train_featured, "ranger","SMOTE")
 ```
 
 ### XGBoosting Tree
-```{r}
+```{r, message=FALSE, warning=FALSE}
 xgb_over <- train_val(train_featured, "xgbTree","over")
 xgb_under <- train_val(train_featured, "xgbTree","under")
 xgb_S <- train_val(train_featured, "xgbTree","SMOTE")
 ```
 
 ### Regression with regularization
-```{r}
+```{r, message=FALSE, warning=FALSE}
 glmnet_over <- train_val(train_featured, "glmnet","over")
 glmnet_under <- train_val(train_featured, "glmnet","under")
 glmnet_S <- train_val(train_featured, "glmnet","SMOTE")
