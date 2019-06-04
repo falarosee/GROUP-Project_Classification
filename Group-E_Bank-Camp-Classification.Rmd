@@ -17,6 +17,8 @@ packages_list <- c(
   'corrplot',
   'data.table',
   'DMwR',
+  'dplyr',
+  'GGally',
   'ggplot2',
   'lubridate',
   'MLmetrics')
@@ -95,18 +97,41 @@ test[ , which(sapply(test, is.integer)):=lapply(.SD,as.numeric), .SDcols = sappl
 str(train)
 ```
 
-## 3. Data Exploration
+## 3. Exploratory Data Analysis (EDA)
 
-### Correlation Plot
+### Target Variable Distribution
+
 ```{r}
-numVars<-c('age','balance','day', 'duration', 'campaign', 'previous')
+sort(summary(train$y), dec=T)/nrow(train)
 
-trainCorrplot<- train[,..numVars]
-corresult = cor(trainCorrplot)
-corrplot(corresult,  type="upper")
+p1<-ggplot(train, aes(x=y))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+ labs(title = "Distribution of Clients Subscribed")+
+  xlab("y")+ ylab("Count")
+train[, job:=factor(job, levels=names(sort(summary(train$job), dec=T)))]
+levels(train$job)
+p1
 ```
 
-### Distributions of numerical variables
+### Numerical Variables
+
+### Correlation Plot
+
+In EDA we first create a correlation plot to see if there is any significant correlation between explanatory variables.
+
+```{r}
+numerical <- select_if(train,is.numeric)
+cors <- cor(numerical)
+corr_plot <- ggcorr(cors, label_round = 2, label = TRUE)
+corr_plot
+```
+
+
+
+
+As we can see, no variables have significant correlations, we therefore do not need to transform or drop variables based on multivariate correlation between numeric explanatory variables. 
+
+### Univariate Analysis
+
 ```{r}
 for(i in numVars){
   counts <- table(train[,..i])
@@ -114,15 +139,11 @@ for(i in numVars){
 }
 ```
 
-### Distributions of categorical variables
-```{r}
-catVars <- colnames(train[,-..numVars])
+### Categorical Variables
 
-for(i in catVars){
-  counts <- table(train[,..i])
-  barplot(counts, main = i,  col = "dodgerblue4")
-}
-```
+Next we check univariate distributions of each variable, to see if the numerical variables are skewed, or if some factors of the categorical variables account for more of the data, than others.
+
+### Univariate Analysis
 
 ### Job
 ##### Job univariate bar chart (count)
@@ -136,6 +157,7 @@ train[, job:=factor(job, levels=names(sort(summary(train$job), dec=T)))]
 levels(train$job)
 p1
 ```
+We see that a large portion of historic applicants is made up of blue collar and management related jobs.
 
 ### Marital
 #### Marital univariate bar chart (count)
@@ -149,6 +171,8 @@ train[, marital:=factor(marital, levels=names(sort(summary(train$marital), dec=T
 levels(train$marital)
 p2
 ```
+Most of the historic applicants were married, with a fraction being divorced.
+
 
 ### Education
 ##### Education univariate bar chart (count)
@@ -162,6 +186,7 @@ train[, education:=factor(education, levels=names(sort(summary(train$education),
 levels(train$education)
 p3
 ```
+Most historic applicants have at least secondary education, making them good candidates from a business point of view.
 
 ### Month
 #### Month univariate bar chart (count)
@@ -174,6 +199,8 @@ p4<-ggplot(train, aes(x=month))+geom_bar(stat='count',fill="dodgerblue4", colour
 levels(train$month)
 p4
 ```
+We see spikes of applications in may, sustained throughout the summer and dropping during the rest of the year.
+
 ### Age
 #### Age univariate bar chart (count)
 ```{r}
@@ -184,8 +211,14 @@ p5<-ggplot(train, aes(x=age))+geom_histogram(fill="dodgerblue4", colour="dodgerb
 levels(train$age)
 p5
 ```
+We see the age distribution skewed to the right, with the majority appliactions between 30 and 40 years of age.
+
 
 ### Bivariate Analysis
+In the bivariate analysis, we see what proportion of applicants have subscribed and not subscribed according to each variable.
+
+
+
 #### Marital 
 ```{r}
 #Marital + Loan bar chart (count)
@@ -196,6 +229,8 @@ p6<-ggplot(train,
   labs(title = "Loan Acquisition by Marital Status")+xlab("Marital Status")+ ylab("Count")
 p6
 ```
+We see that there seems to be a linear correlation between 
+
 
 #### Marital + Default bar chart (count)
 ```{r}
