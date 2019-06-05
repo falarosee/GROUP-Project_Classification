@@ -1,27 +1,31 @@
 ---
-title: "GroupE_Classification"
+title: "Bank Campaign Classification"
 date: "5/29/2019"
 output:
   html_document:
     toc: true
     toc_depth: 3
+    toc_float: true
 author: "Group E"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, COMMENT = NA, warning = FALSE)
+knitr::opts_chunk$set(echo = TRUE, comment = NA, warning = FALSE)
 start_time <- Sys.time()
 print(paste0('---START--- Starting at ',start_time))
 packages_list <- c(
   'caret',
   'corrplot',
   'data.table',
-  'DMwR',
+  'DMwR', #SMOTE
   'dplyr',
-  'GGally',
+  'GGally', #Corrplot
   'ggplot2',
+  'glmnet', #Lasso regularization
   'lubridate',
-  'MLmetrics')
+  'MLmetrics',
+  'plotly', #Interactive correlation
+  'pROC') #ROC Graph
 for (i in packages_list){
   if(!i%in%installed.packages()){
     install.packages(i, dependencies = TRUE)
@@ -53,51 +57,49 @@ train = fread("BankCamp_train.csv", stringsAsFactors = T)
 test = fread("BankCamp_test.csv", stringsAsFactors = T)
 ```
 
-Here we switch the order of the factors, to get metrics related to the yes target.
+Here we switch the order of the factors to get metrics related to the "yes" target.
 
 ```{r change_factors}
 train$y <- factor(train$y, levels = c("yes", "no"))
 test$y <- factor(test$y, levels = c("yes", "no"))
 ```
 
-We explore the first few rows, structure and summary of the training data to see if there are any inconsistencies.
-
-```{r head}
-head(train)
-```
-
-This is the structure of the data.
-
-```{r str}
-str(train)
-```
-
-This is the summary of the data.
-
-```{r summary}
-summary(train)
-```
-We see that the data seems quite clean, apart from some varible types that we might want to change later. 
-
-Now we check if there are missing values in any column:
-
-```{r missing}
-sapply(train, function(x) sum(is.na(x)))
-```
-
-We also check if there are any duplicate values:
-
-```{r duplicated}
-any(duplicated(train))
-```
-We see there are neither inconsistent missing values nor duplicates in the set. However, we see that the "pdays" variable contains '-1' values, which we assume indicates that the information is not applicable to the client.
-
 Finally we set the types for numerical variables:
 
 ```{r numerical}
 train[ , which(sapply(train, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(train, is.integer)]
 test[ , which(sapply(test, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(test, is.integer)]
+```
+
+### Initial Exploration {.tabset .tabset-fade .tabset-pills}
+***
+We explore the first few rows, structure and summary of the training data to see if there are any inconsistencies.
+
+We see there are neither inconsistent missing values nor duplicates in the set. However, we see that the "pdays" variable contains '-1' values, which we assume indicates that the information is not applicable to the client.
+
+#### First Rows
+```{r head}
+head(train)
+```
+
+#### Structure
+```{r str}
 str(train)
+```
+
+#### Summary
+```{r summary}
+summary(train)
+```
+
+#### Misssing
+```{r missing}
+sapply(train, function(x) sum(is.na(x)))
+```
+
+#### Duplicates
+```{r duplicated}
+any(duplicated(train))
 ```
 
 ## 3. Exploratory Data Analysis (EDA)
@@ -123,7 +125,7 @@ For later modelling and model evaluation, this poses a challenge, as the model i
 
 ### 3.2 Numerical Variable Distributions
 
-#### 3.21 Numeric Correlation Plot
+#### 3.21 Numeric Correlation Plots
 
 #Next, a correlation plot is constructed to see if there is any significant correlation between numeric explanatory variables.
 
@@ -135,11 +137,21 @@ corr_plot
 
 As we can see, no variables have significant correlations, apart from "previous" and "pdays". We therefore do not need to spend a lot of time on transforming or dropping variables purely based on multivariate correlation between numeric explanatory variables. 
 
-#### 3.22 Numeric Variables Plot
+Here is an interactive version of the correlation matrix.
 
 ```{r}
+plot_ly(x = colnames(train),
+        y=colnames(train), 
+        z = cor(numerical), colors = colorRamp(c("dodgerblue4", "brown2")),
+        type = "heatmap") %>% layout(title="Interactive Correlation Matrix")
+```
+
+
+#### 3.22 Numeric Variables Plot
+
+```{r, fig.height=12, fig.width=16}
 num_y <- train[, c('age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous','y')]
-ggpairs(num_y[,1:8], title = "Distribution & Correlation graph", ggplot2::aes(colour=y, alpha=1/100), upper = list(continuous = wrap("cor", size = 3, alignPercent = 1)))
+ggpairs(num_y[,1:8], title = "Distribution & Correlation graph", ggplot2::aes(colour=y, alpha=1/100))
 ```
 
 In the above graph we see how the numeric variables relate to each other and to the target variable. We can see through the diagram diagonal, that their might be trends within the continuous distributions of the explanatory variables that match up more with certain 'yes', or certain 'no' factors and can explore using these trends to bin variables in the feature engineering phase.
@@ -366,7 +378,7 @@ cv_numeric_variables[cv_numeric_variables < 0.05]
 ```
 
 ### 3.5 Linear Dependencies
-Caret uses QR decomposition to enumerate sets of linear combinations and therefore, remove them, however there are none.
+Caret finds sets of linear combinations to remove them, however there are none.
 
 ```{r}
 lc<-findLinearCombos(train[, ..numeric_variables])
@@ -376,7 +388,8 @@ lc
 ## 4. Baseline
 
 ### 4.1 Setting up Preprocessing: Centering, Scaling and performing a Yeo Johnson transformation
-To reduce the weight/importance of certain features due to their scale, we center them and scale them. We also reduce skewness by performing a Yeo Johnson transformation. This combination will be performed on each model training.
+To reduce the weight/importance of certain features due to their scale, we center them and scale them. We also reduce skewness by performing a Yeo Johnson transformation since it can handle negative values. This combination will be performed on each model training.
+
 ```{r}
 pp<-c("center", "scale", "YeoJohnson")
 preProcess(train, method =pp)
@@ -390,7 +403,6 @@ dummy<-dummyVars(formula= ~., data = train[, -"y"], sep = "_")
 final_train<-data.table(predict(dummy, newdata = train[, -"y"]))
 final_train$y<-train$y
 final_test<-data.table(predict(dummy, newdata = test))
-head(final_train)
 ```
 
 Now we define our training function, it will perform a 5 fold cross validation on 80% of the training data and then a final validation on the remaining 20% of the data that acts as a holdout. It also does the aforementioned preprocessing.
@@ -421,7 +433,7 @@ train_val<- function(train_dt, model, sampling){
   }
   
   ini<-now()
-  model<- train(y~ ., data = model_train, method = model, metric="AUC", trControl=tc, preProcess=pp)
+  model<- train(y~ ., data = model_train, method = model, metric="Recall", trControl=tc, preProcess=pp)
   message("Cross Validation Scores having Yes as the positive class")
   message(model$results)
   message("Train + Predict time:")
@@ -429,8 +441,8 @@ train_val<- function(train_dt, model, sampling){
   
   predicted = predict(model, newdata = holdout)
   
-  message("Holdout Scores")
-  message(confusionMatrix(table(predicted, holdout$y), positive="yes", mode="everything"))
+  print("Holdout Scores")
+  print(confusionMatrix(table(predicted, holdout$y), positive="yes", mode="everything"))
   
   return(model)
 }
@@ -444,14 +456,9 @@ lm <- train_val(final_train, "glm")
 
 So our Sensitivity or Recall is very low based on the "yes" class, meaning that we correctly classify a really small set of the "yes" cases.
 
-Now we run a random forest as an alternative baseline.
-
-```{r}
-rf <- train_val(final_train, "ranger")
-```
-
 ## 5. Feature Engineering
 Here we merge the two datasets to perform multiple feature engineering steps
+
 ```{r feature engineering}
 y <- final_train$y
 final_train$y <- NULL
@@ -460,12 +467,14 @@ merged_df <- rbind(final_train, final_test)
 
 ### 5.1 Days to end of month assuming all the months have 30 days
 We create a variable that measures days to end of month, to see if the date contacted could have any explanatory value in our prediction.
+
 ```{r}
 merged_df$days_to_end_of_month <- 30 - merged_df$day
 ```
 
 ### 5.2 Balance General Status -> 1 if positive, 0 if negative or 0
 We booleanize the 'balance' variable, to make the distinction between having a balance and not, more explicit.
+
 ```{r}
 positive_balance <- function(number){
   is_positive = 0
@@ -477,6 +486,7 @@ merged_df$balance_general_status <- as.numeric(lapply(merged_df$balance,  FUN = 
 
 ### 5.3 Quantity of loans 0, 1 or 2 (housing and personal)
 We create a quantity of loans category, since having a loan or more can make a difference in the decision of a potential client.
+
 ```{r}
 merged_df$quantity_loans <- merged_df$housing_yes+merged_df$loan_yes
 ```
@@ -504,6 +514,7 @@ merged_df<-data.table(predict(dmy, newdata = merged_df))
 
 ### 5.5 Season Quarters
 In the EDA we have seen that trends differ to seasons. We therefore bin for seasons.
+
 ```{r}
 merged_df$Q1 <- merged_df$month_jan+merged_df$month_feb+merged_df$month_mar
 merged_df$Q2 <- merged_df$month_apr+merged_df$month_may+merged_df$month_jun
@@ -519,35 +530,80 @@ test_featured <- merged_df[(nrow(train)+1):nrow(merged_df),]
 
 Here we define a number of models, to see which one will preform the best.
 
-### 6.1 Logistic Regression
+### 6.1 Logistic Regression {.tabset .tabset-fade .tabset-pills}
+***
+
+#### LR Over
 ```{r, message=FALSE}
 lm_over <- train_val(train_featured, "glm","over")
+```
+
+#### LR Under
+```{r, message=FALSE}
 lm_under <- train_val(train_featured, "glm","under")
+```
+
+#### LR SMOTE
+```{r, message=FALSE}
 lm_S <- train_val(train_featured, "glm","SMOTE")
 ```
 
-### 6.2  Random Forest
+### 6.2 Random Forest {.tabset .tabset-fade .tabset-pills}
+***
+
+#### RF Over
 ```{r, message=FALSE}
 rf_over <- train_val(train_featured, "ranger","over")
+```
+
+#### RF Under
+```{r, message=FALSE}
 rf_under <- train_val(train_featured, "ranger","under")
+```
+
+#### RF SMOTE
+```{r, message=FALSE}
 rf_S <- train_val(train_featured, "ranger","SMOTE")
 ```
 
-### 6.3 XGBoosting Tree
+### 6.3 XGBoosting Tree {.tabset .tabset-fade .tabset-pills}
+***
+
+#### XGB Over
 ```{r, message=FALSE}
 xgb_over <- train_val(train_featured, "xgbTree","over")
+```
+
+#### XGB Under
+```{r, message=FALSE}
 xgb_under <- train_val(train_featured, "xgbTree","under")
+```
+
+#### XGB SMOTE
+```{r, message=FALSE}
 xgb_S <- train_val(train_featured, "xgbTree","SMOTE")
 ```
 
-### 6.4 Regression with regularization
+### 6.4 Regression with Lasso regularization {.tabset .tabset-fade .tabset-pills}
+***
+
+#### GLR Over
 ```{r, message=FALSE}
 glmnet_over <- train_val(train_featured, "glmnet","over")
+```
+
+#### GLR Under
+```{r, message=FALSE}
 glmnet_under <- train_val(train_featured, "glmnet","under")
+```
+
+#### GLR SMOTE
+```{r, message=FALSE}
 glmnet_S <- train_val(train_featured, "glmnet","SMOTE")
 ```
 
 ### 6.5 Results
+
 We print the results to compare the different models.
 
 ```{r}
@@ -571,9 +627,11 @@ summary(results)
 
 ### 6.6 Plot of Results
 We plot the results to get a deeper understanding which is our best model.
-```{r}
+
+```{r, fig.height=18, fig.width=16}
 bwplot(results, layout = c(2, 1), scales = list(relation="free"))
 ```
+
 Based on this, we realize that the best performing model is the Random Forest with SMOTE sampling.
 
 ## 7. Hyperparameter Tuning
@@ -587,9 +645,8 @@ grid<-expand.grid(
 )
 
 tc<-trainControl(
-  method = "repeatedcv",
+  method = "cv",
   number=5,
-  repeats = 2,
   savePredictions = TRUE,
   summaryFunction = prSummary,
   classProbs=TRUE,
@@ -598,7 +655,11 @@ tc<-trainControl(
 
 ini<-now()
 
-model_train<-SMOTE(y ~ ., data  = train_featured) 
+trainIndex <- createDataPartition(train_featured$y, p = .95, list = FALSE)
+model_train <- train_featured[ trainIndex,]
+holdout  <- train_featured[-trainIndex,]
+
+model_train<-SMOTE(y ~ ., data  = model_train) 
 
 grid_rf <- train(
   y ~ .,
@@ -619,20 +680,44 @@ print(now()-ini)
 grid_rf
 ```
 
-```{r}
-grid_rf$bestTune
-```
+### Final model
+
+And this is the final model:
 
 ```{r}
 grid_rf$finalModel
 ```
 
+### Plot of results during Grid Search
+Here we can see the Recall of the model accross the grid search process.
+
 ```{r}
 plot(grid_rf)
 ```
 
+### Variable Importance
+Here we see the variable importance for the final model.
+
 ```{r}
 plot(varImp(grid_rf), top = 20)
+```
+
+### Results on Holdout after Grid Search
+
+#### ROC Curve
+
+```{r}
+predicted <- predict(grid_rf, newdata = holdout)
+
+roc_curve<-roc(response=as.numeric(factor(holdout$y == "yes")), predictor=as.numeric(factor(predicted == "yes")))
+plot.roc(roc_curve, main='ROC on Holdout');grid()
+```
+
+#### Confusion Matrix
+
+```{r}
+print(confusionMatrix(table(predicted, holdout$y), positive="yes", mode="everything"))
+plot(table(predicted=predicted, real=holdout$y))
 ```
 
 ## 8. Predictions
@@ -641,10 +726,6 @@ We predict on the test set, add the predictions to it and create our predictions
 ```{r predictions}
 predicted <- predict(grid_rf, newdata = test_featured)
 df_pred<-cbind(test, predicted)
-head(df_pred)
-```
-
-```{r}
 fwrite(df_pred[,c("predicted")],"predictions.csv")
 ```
 
