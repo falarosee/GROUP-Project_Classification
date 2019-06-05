@@ -102,23 +102,22 @@ str(train)
 
 ## 3. Exploratory Data Analysis (EDA)
 
-In the first step, we explore the distributions of the variables, in order to gain insights into the data and inform decisions on the later feature engineering and modelling process.
+In the first step, we explore the distribution of the variables, in order to gain insights of the data and inform decisions on the later feature engineering and modelling process.
 
 ### 3.1 Target Variable Distribution
 
 ```{r}
 sort(summary(train$y), dec=T)/nrow(train)
-
-p1<-ggplot(train, aes(x=y))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4", label = TRUE)+
+p0<-ggplot(train, aes(x=y))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4", label = TRUE)+
   theme(axis.text.x = element_text(angle=0))+ labs(title = "Distribution of Clients Subscribed")+
   xlab("y")+ ylab("Count")
 train[, job:=factor(job, levels=names(sort(summary(train$job), dec=T)))]
 levels(train$job)
-p1
+p0
 ```
 <hr />
 
-We see that the target variable is heavily unballanced, with over 85% of the values denoting 'no'. In the business context this is explained by the fact that the term deposit subscription is not targeted towards the majority of clients. 
+We see that the target variable is heavily unbalanced, with over 85% of the values denoting 'no'. In the business context this is explained by the fact that the term deposit subscription is not targeted towards the majority of clients. 
 
 For later modelling and model evaluation, this poses a challenge, as the model is likely to achieve a high accuracy by purely training on and predicting 'no' targets, despite having a very low sensitivity score (namely being poor at correctly indentifying true positive targets). 
 
@@ -126,7 +125,7 @@ For later modelling and model evaluation, this poses a challenge, as the model i
 
 #### 3.21 Numeric Correlation Plot
 
-Next, a correlation plot is constructed to see if there is any significant correlation between explanatory variables.
+#Next, a correlation plot is constructed to see if there is any significant correlation between numeric explanatory variables.
 
 ```{r}
 numerical <- select_if(train,is.numeric)
@@ -136,37 +135,24 @@ corr_plot
 
 As we can see, no variables have significant correlations, apart from "previous" and "pdays". We therefore do not need to spend a lot of time on transforming or dropping variables purely based on multivariate correlation between numeric explanatory variables. 
 
-#### 3.22 Numeric Distributions Plot
+#### 3.22 Numeric Variables Plot
 
 ```{r}
 num_y <- train[, c('age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous','y')]
-ggpairs(num_y[,1:8], title = "Distribution & Correlation graph", ggplot2::aes(colour=y, alpha=1/100))
+ggpairs(num_y[,1:8], title = "Distribution & Correlation graph", ggplot2::aes(colour=y, alpha=1/100), upper = list(continuous = wrap("cor", size = 3, alignPercent = 1)))
 ```
-In the above graph we see how the numeric variables relate to each other and to the target variable. We can see through the diagram diagonal, that their might be trends within the continuous distributions of the explanatory variables that match up more with certain yes, or certain no factors and can explore using these trends to bin variables in the feature engineering phase.
-<hr />
 
+In the above graph we see how the numeric variables relate to each other and to the target variable. We can see through the diagram diagonal, that their might be trends within the continuous distributions of the explanatory variables that match up more with certain 'yes', or certain 'no' factors and can explore using these trends to bin variables in the feature engineering phase.
 
-### 3.23 Skewness, Numerical Variables
-
-Next we check univariate distributions of each categorical variable, to see if the numerical variables are skewed, or if some factors of the categorical variables account for more of the data, than others.
-
-```{r}
-numDist<- c('age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous')
-for(i in numDist){
-  counts <- table(train[,..i])
-  barplot(counts, main = i, col = 'dodgerblue4')
-}
-```
 We see that many of the variables are skewed, so we will consider normalizing the scales of the numeric variables at a later stage. 
 <hr />
 
-### 3.3 Catagorical Variable Distribution
-In this subsection, we explore the categorical variable distributions, to inform on later feature engineering decisions.
+### 3.3 Categorical Variable Distribution
+#In this subsection, we explore the categorical variable distributions to inform on later feature engineering decisions.
 
-#### 3.31 Job univariate bar chart (count)
+#### 3.31 Job Distribution
 ```{r}
 sort(summary(train$job), dec=T)/nrow(train)
-
 p1<-ggplot(train, aes(x=job))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
   theme(axis.text.x = element_text(angle=90))+ labs(title = "Distribution by Kind of Job")+
   xlab("Job")+ ylab("Count")
@@ -174,14 +160,13 @@ train[, job:=factor(job, levels=names(sort(summary(train$job), dec=T)))]
 levels(train$job)
 p1
 ```
+
 We see that a large portion of potential targets is made up of blue collar and management related jobs.
 <hr />
 
-
-#### 3.32 Marital univariate bar chart (count)
+#### 3.32 Marital Status Distribution
 ```{r}
 sort(summary(train$marital), dec=T)/nrow(train)
-
 p2<-ggplot(train, aes(x=marital))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
   theme(axis.text.x = element_text(angle=0))+ labs(title = "Distribution by Marital Status")+
   xlab("Marital Status")+ ylab("Count")
@@ -189,14 +174,13 @@ train[, marital:=factor(marital, levels=names(sort(summary(train$marital), dec=T
 levels(train$marital)
 p2
 ```
+
 Most of the historic potential targets were married, with a fraction being divorced.
 <hr />
 
-
-#### 3.33 Education univariate bar chart (count)
+#### 3.33 Education Level Distribution
 ```{r}
 sort(summary(train$education), dec=T)/nrow(train)
-
 p3<-ggplot(train, aes(x=education))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
   theme(axis.text.x = element_text(angle=0))+labs(title = "Distribution by Education Level")+
   xlab("Education Level")+ ylab("Count")
@@ -204,10 +188,11 @@ train[, education:=factor(education, levels=names(sort(summary(train$education),
 levels(train$education)
 p3
 ```
+
 Most historic potential targets have at least secondary education, making them good candidates from a business point of view.
 <hr />
 
-#### 3.34 Month univariate bar chart (count)
+#### 3.34 Month Distribution
 ```{r}
 sort(summary(train$month), dec=T)/nrow(train)
 train$month <- factor(train$month, levels = c( "jan", "feb", "mar", "apr","may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"))
@@ -221,240 +206,145 @@ p4
 We see spikes of subscriptions in May, sustained throughout the summer and dropping during the rest of the year.
 <hr />
 
-
-#### 3.35 Loan univariate bar chart (count)
+#### 3.35 Loan Acquisition Distribution
 ```{r}
 sort(summary(train$loan), dec=T)/nrow(train)
-
-p23<-ggplot(train, aes(x=loan))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+p5<-ggplot(train, aes(x=loan))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
   theme(axis.text.x = element_text(angle=0))+labs(title = "Loans Acquired")+
   xlab("Loans")+ ylab("Count")
-p23
+p5
 ```
+
 We see that the majority of potential targets do not have a loan.
 <hr />
 
-#### 3.36 Housing Loan univariate bar chart (count)
+#### 3.36 Housing Loan Acquisition Distribution
 ```{r}
 sort(summary(train$housing), dec=T)/nrow(train)
-
-p24<-ggplot(train, aes(x=housing))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+p6<-ggplot(train, aes(x=housing))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
   theme(axis.text.x = element_text(angle=0))+labs(title = "Housing Loan Acquired")+
   xlab("Housing Loan")+ ylab("Count")
-p24
-```
-The housing loans however, are more ballenced.
-<hr />
-
-#### 3.37 Contact univariate bar chart (count)
-```{r}
-sort(summary(train$contact), dec=T)/nrow(train)
-
-p24<-ggplot(train, aes(x=contact))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
-  theme(axis.text.x = element_text(angle=0))+labs(title = "Contact Type")+
-  xlab("Contact")+ ylab("Count")
-p24
-```
-Most potential applicants can be reached by cellular phone, a significant portion however cannot be reached, as they are unknown. 
-<hr />
-
-#### 3.38 Previous Campaign  univariate bar chart (count)
-```{r}
-sort(summary(train$poutcome), dec=T)/nrow(train)
-
-p24<-ggplot(train, aes(x=poutcome))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
-  theme(axis.text.x = element_text(angle=0))+labs(title = "Previous Campaign Outcome")+
-  xlab("Outcome")+ ylab("Count")
-p24
-```
-<hr />
-Here we have so many unknown values, that this variable does not seem to add a lot to the evaluation.
-
-### 3.4 Bivariate Analysis
-In the bivariate analysis, we see what proportion of clients have subscribed and not subscribed according to each variable. We further explore trends amongst the explanatory variables, to inform further feature creation.
-
-#### 3.41 Marital 
-```{r}
-#Marital + Loan bar chart (count)
-p6<-ggplot(train, 
-           aes(x = marital, 
-               fill = loan)) + 
-  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
-  labs(title = "Loan Acquisition by Marital Status")+xlab("Marital Status")+ ylab("Count")
 p6
 ```
-We see that the proportion of loans seems to fit to the proportion of factors within the variable, suggesting that it has less explanatory value.
 
-#### 3.42 Marital + Default bar chart (count)
+The housing loans however, are more balanced.
+<hr />
+
+#### 3.37 Contact Type Distribution
 ```{r}
-p7<-ggplot(train, 
-             aes(x = marital, 
-                 fill = default)) + 
-    geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
-  labs(title = "Default by Marital Status")+xlab("Marital Status")+ ylab("Count")
+sort(summary(train$contact), dec=T)/nrow(train)
+p7<-ggplot(train, aes(x=contact))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+labs(title = "Contact Type")+
+  xlab("Contact")+ ylab("Count")
 p7
 ```
 
-#### 3.43 Marital + y bar chart (percent)
-```{r}
-mytable <- table(train$marital, train$y)
-tab <- as.data.frame(prop.table(mytable, 2))
-colnames(tab) <-  c("marital", "y", "perc")
+Most potential applicants can be reached by cellular phone, a significant portion however cannot be reached, as they are unknown. 
+<hr />
 
-p8<-ggplot(data = tab, aes(x = marital, y = perc, fill = y)) + 
-  geom_bar(stat = 'identity', position = 'dodge', alpha = 1) + scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
-  labs(title = "Term Deposit Subscription by Marital Status")+xlab("Marital Status")+ ylab("Percent")
+#### 3.38 Previous Campaign Outcome Distribution
+```{r}
+sort(summary(train$poutcome), dec=T)/nrow(train)
+p8<-ggplot(train, aes(x=poutcome))+geom_bar(stat='count',fill="dodgerblue4", colour="dodgerblue4")+
+  theme(axis.text.x = element_text(angle=0))+labs(title = "Previous Campaign Outcome")+
+  xlab("Outcome")+ ylab("Count")
 p8
 ```
-We see that a greater prorportion of single clients seem to go for a loan subscription than maried or divorced couples.
 
-#### 3.44 Education + Loan bar chart (count)
+In this graph most values are unknown, for this reason the variable has low explanatory power for the model.
+<hr />
+
+### 3.4 Bivariate Analysis
+In the bivariate analysis, we can see what proportion of clients have subscribed and not subscribed according to each variable. We further explore trends amongst the explanatory variables, to inform further feature creation.
+
+#### 3.41 Marital 
 ```{r}
 p9<-ggplot(train, 
-           aes(x = education, 
-               fill = loan)) + 
-  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
-  labs(title = "Loan Acquisition by Education Level")+xlab("Education Level")+ ylab("Count")
+           aes(x = marital, 
+               fill = y)) + 
+  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue3", "dodgerblue4"))+
+  labs(title = "Term Deposit Subscription by Marital Status")+xlab("Marital Status")+ ylab("Count")
 p9
 ```
 
-#### 3.45 Education + Default bar chart (count)
+We see that the proportion of married clients that seem to go for a term deposit subscription is smaller than single or divorced people.
+
+#### 3.42 Education
 ```{r}
 p10<-ggplot(train, 
            aes(x = education, 
-               fill = default)) + 
-  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
-  labs(title = "Default by Education Level")+xlab("Education Level")+ ylab("Count")
+               fill = y)) + 
+  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue3", "dodgerblue4"))+
+  labs(title = "Term Deposit Subscription by Education Level")+xlab("Education Level")+ ylab("Count")
 p10
 ```
 
-#### 3.46 Education + y bar chart (percent)
-```{r}
-mytable <- table(train$education, train$y)
-tab <- as.data.frame(prop.table(mytable, 2))
-colnames(tab) <-  c("education", "y", "perc")
+Tertiary education people seems to be more tend to go for a term deposit subscription, than primary or secondary.
 
-p11<- ggplot(data = tab, aes(x = education, y = perc, fill = y)) + 
-  geom_bar(stat = 'identity', position = 'dodge', alpha = 1) + scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
-labs(title = "Term Deposit Subscription by Education Level")+xlab("Education Level")+ ylab("Percent")
+#### 3.43 Job
+```{r}
+#Job + Term Deposit bar chart (count)
+p11<-ggplot(train, 
+           aes(x = job, 
+               fill = y)) + 
+  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue3", "dodgerblue4"))+ theme(axis.text.x = element_text(angle=90))+
+  labs(title = "Term Deposit Subscription by Job")+xlab("Job")+ ylab("Count")
 p11
 ```
-Secondary education seems to have some explanatory value, in predicting the target.
 
+It seems that student clients go for a term deposit subscription more than clients working or retired.
 
-#### 3.47 Job + Loan bar chart (count)
+#### 3.44 Age
 ```{r}
+#Age + Term Deposit bar chart (count)
 p12<-ggplot(train, 
-           aes(x = job, 
-               fill = loan)) + 
-  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+theme(axis.text.x = element_text(angle=90))+
-  labs(title = "Job by Loan Status")+xlab("Job")+ ylab("Count")
+           aes(x = age, 
+               fill = y)) + 
+  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue3", "dodgerblue4"))+ theme(axis.text.x = element_text(angle=90))+
+  labs(title = "Term Deposit Subscription by Age")+xlab("Age")+ ylab("Count")
 p12
 ```
 
-#### 3.48 Job + Default bar chart (count)
-```{r}
-p13<-ggplot(train, 
-            aes(x = job, 
-                fill = default)) + 
-  geom_bar(position = "dodge")+ scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+theme(axis.text.x = element_text(angle=90))+
-  labs(title = "Default Status by Job")+xlab("Job")+ ylab("Count")
-p13
-```
+It seems that middle-aged clients, from 30 to 35 years, go for a term deposit subscription more than younger and older clients.
 
-#### 3.48 Job + y bar chart (percent)
-```{r}
-mytable <- table(train$job, train$y)
-tab <- as.data.frame(prop.table(mytable, 2))
-colnames(tab) <-  c("job", "y", "perc")
+### 3.5 Outliers Analysis
 
-p14<-ggplot(data = tab, aes(x = job, y = perc, fill = y)) + 
-  geom_bar(stat = 'identity', position = 'dodge', alpha = 1) + scale_fill_manual(values=c("dodgerblue4","dodgerblue3"))+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-  labs(title = "Term Deposit Subscription by Job")+xlab("Job")+ ylab("Percent")
-p14
-```
-It seems that clients that are retired or holding management jobs have the greatest incentive of subscribing to a term deposit. 
+In the following section we analyze the distribution of the numerical explanatory variables according to their response to the term deposit subscription. 
 
-#### 3.49 Balance + education box plot
+#### 3.51 Call Duration
 ```{r}
-p15<-ggplot(train, 
-       aes(x = education, 
-           y = balance)) + geom_line(size = 1.5, 
-                                     color = "lightgrey") +
-  geom_boxplot(fill="dodgerblue3", color="dodgerblue4") +
-  labs(title = "Balance by Education Level")+xlab("Education")+ ylab("Balance")
-p15
-```
-
-### 3.410 Balance + education scatter plot
-```{r}
-p16<-ggplot(train, 
-            aes(y = balance, 
-                x = education)) +  
-  geom_jitter(color = "dodgerblue4") + 
-  labs(title = "Balance Distribution by Education Level")+theme(axis.text.x = element_text(angle=90))+
-  xlab("Education")+ ylab("Balance")
-p16
-```
-
-#### 3.411 Balance + job box plot
-```{r}
-p17<-ggplot(train, 
-            aes(x = job, 
-                y = balance)) + geom_line(size = 1.5, 
-                                          color = "lightgrey") +
-  geom_boxplot(fill="dodgerblue3", color="dodgerblue4") +
-  labs(title = "Balance by Kind of Job")+theme(axis.text.x = element_text(angle=90))+
-  xlab("Job")+ ylab("Balance")
-p17
-```
-
-#### 3.412 Balance + job scatter plot
-```{r}
-p18<-ggplot(train, 
-       aes(y = balance, 
-           x = job)) +  
-  geom_jitter(color = "dodgerblue4") + 
-  labs(title = "Balance Distribution by Kind of Job")+theme(axis.text.x = element_text(angle=90))+
-  xlab("Job")+ ylab("Balance")
-p18
-```
-
-#### 3.413 Duration + y
-```{r}
-p19<-ggplot(train, aes(x=as.factor(y), y=duration)) +
+p13<-ggplot(train, aes(x=as.factor(y), y=duration)) +
   geom_boxplot(fill="dodgerblue3", color="dodgerblue4")+
   theme_classic()+labs(title = "Call Duration by Term Deposit Subscription")+xlab("Term deposit")+
   ylab("Call Duration (sec.)")
-p19
+p13
 ```
 
-#### 3.415 Pdays + y
+#### 3.52 Days form last contact
 ```{r}
-p20<-ggplot(train, aes(x=as.factor(y), y=pdays)) +
+p14<-ggplot(train, aes(x=as.factor(y), y=pdays)) +
   geom_boxplot(fill="dodgerblue3", color="dodgerblue4")+
   theme_classic()+labs(title = "Days from last contact by Term Deposit Subscription")+xlab("Term deposit")+
   ylab("Days from last contact")
-p20
+p14
 ```
 
-#### 3.416 Previous + y
+#### 3.53 Contacts before this Campaign
 ```{r}
-p21<-ggplot(train, aes(x=as.factor(y), y=previous)) +
+p15<-ggplot(train, aes(x=as.factor(y), y=previous)) +
   geom_boxplot(fill="dodgerblue3", color="dodgerblue4")+
   theme_classic()+labs(title = "Contacts before this Campaign by Term Deposit Subscription")+xlab("Term deposit")+
   ylab("Contacts before this campaign")
-p21
+p15
 ```
 
-#### 3.417 Campaign + y
+#### 3.54 Contacts during this Campaign
 ```{r}
-p22<-ggplot(train, aes(x=as.factor(y), y=campaign)) +
+p16<-ggplot(train, aes(x=as.factor(y), y=campaign)) +
   geom_boxplot(fill="dodgerblue3", color="dodgerblue4")+
   theme_classic()+labs(title = "Contacts during this Campaign by Term Deposit Subscription")+xlab("Term deposit")+
   ylab("Contacts during this campaign")
-p22
+p16
 ```
 
 ### 3.418 Coefficient of Variation
