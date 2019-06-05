@@ -71,7 +71,7 @@ train[ , which(sapply(train, is.integer)):=lapply(.SD,as.numeric), .SDcols = sap
 test[ , which(sapply(test, is.integer)):=lapply(.SD,as.numeric), .SDcols = sapply(test, is.integer)]
 ```
 
-### Initial Exploration {.tabset .tabset-fade .tabset-pills}
+### 2.1 Initial Exploration {.tabset .tabset-fade .tabset-pills}
 ***
 We explore the first few rows, structure and summary of the training data to see if there are any inconsistencies.
 
@@ -117,6 +117,7 @@ train[, job:=factor(job, levels=names(sort(summary(train$job), dec=T)))]
 levels(train$job)
 p0
 ```
+
 <hr />
 
 We see that the target variable is heavily unbalanced, with over 85% of the values denoting 'no'. In the business context this is explained by the fact that the term deposit subscription is not targeted towards the majority of clients. 
@@ -127,7 +128,7 @@ For later modelling and model evaluation, this poses a challenge, as the model i
 
 #### 3.21 Numeric Correlation Plots
 
-#Next, a correlation plot is constructed to see if there is any significant correlation between numeric explanatory variables.
+Next, a correlation plot is constructed to see if there is any significant correlation between numeric explanatory variables.
 
 ```{r}
 numerical <- select_if(train,is.numeric)
@@ -147,7 +148,7 @@ plot_ly(x = colnames(train),
 ```
 
 
-#### 3.22 Numeric Variables Plot
+#### 3.22 Numerical Variables Plot
 
 ```{r, fig.height=12, fig.width=16}
 num_y <- train[, c('age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous','y')]
@@ -159,8 +160,9 @@ In the above graph we see how the numeric variables relate to each other and to 
 We see that many of the variables are skewed, so we will consider normalizing the scales of the numeric variables at a later stage. 
 <hr />
 
-### 3.3 Categorical Variable Distribution
-#In this subsection, we explore the categorical variable distributions to inform on later feature engineering decisions.
+### 3.3 Categorical Variable Distribution {.tabset .tabset-fade .tabset-pills}
+***
+In this subsection, we explore the categorical variable distributions to inform on later feature engineering decisions.
 
 #### 3.31 Job Distribution
 ```{r}
@@ -174,7 +176,6 @@ p1
 ```
 
 We see that a large portion of potential targets is made up of blue collar and management related jobs.
-<hr />
 
 #### 3.32 Marital Status Distribution
 ```{r}
@@ -188,7 +189,6 @@ p2
 ```
 
 Most of the historic potential targets were married, with a fraction being divorced.
-<hr />
 
 #### 3.33 Education Level Distribution
 ```{r}
@@ -202,7 +202,6 @@ p3
 ```
 
 Most historic potential targets have at least secondary education, making them good candidates from a business point of view.
-<hr />
 
 #### 3.34 Month Distribution
 ```{r}
@@ -216,7 +215,6 @@ p4
 ```
 
 We see spikes of subscriptions in May, sustained throughout the summer and dropping during the rest of the year.
-<hr />
 
 #### 3.35 Loan Acquisition Distribution
 ```{r}
@@ -228,7 +226,6 @@ p5
 ```
 
 We see that the majority of potential targets do not have a loan.
-<hr />
 
 #### 3.36 Housing Loan Acquisition Distribution
 ```{r}
@@ -240,7 +237,6 @@ p6
 ```
 
 The housing loans however, are more balanced.
-<hr />
 
 #### 3.37 Contact Type Distribution
 ```{r}
@@ -252,7 +248,6 @@ p7
 ```
 
 Most potential applicants can be reached by cellular phone, a significant portion however cannot be reached, as they are unknown. 
-<hr />
 
 #### 3.38 Previous Campaign Outcome Distribution
 ```{r}
@@ -264,9 +259,10 @@ p8
 ```
 
 In this graph most values are unknown, for this reason the variable has low explanatory power for the model.
-<hr />
 
-### 3.4 Bivariate Analysis
+### 3.4 Bivariate Analysis {.tabset .tabset-fade .tabset-pills}
+***
+
 In the bivariate analysis, we can see what proportion of clients have subscribed and not subscribed according to each variable. We further explore trends amongst the explanatory variables, to inform further feature creation.
 
 #### 3.41 Marital 
@@ -293,9 +289,8 @@ p10
 
 Tertiary education people seems to be more tend to go for a term deposit subscription, than primary or secondary.
 
-#### 3.43 Job
+#### 3.43 Job + Term Deposit bar chart (count)
 ```{r}
-#Job + Term Deposit bar chart (count)
 p11<-ggplot(train, 
            aes(x = job, 
                fill = y)) + 
@@ -306,9 +301,8 @@ p11
 
 It seems that student clients go for a term deposit subscription more than clients working or retired.
 
-#### 3.44 Age
+#### 3.44 Age + Term Deposit bar chart (count)
 ```{r}
-#Age + Term Deposit bar chart (count)
 p12<-ggplot(train, 
            aes(x = age, 
                fill = y)) + 
@@ -319,7 +313,8 @@ p12
 
 It seems that middle-aged clients, from 30 to 35 years, go for a term deposit subscription more than younger and older clients.
 
-### 3.5 Outliers Analysis
+### 3.5 Outliers Analysis {.tabset .tabset-fade .tabset-pills}
+***
 
 In the following section we analyze the distribution of the numerical explanatory variables according to their response to the term deposit subscription. 
 
@@ -359,7 +354,7 @@ p16<-ggplot(train, aes(x=as.factor(y), y=campaign)) +
 p16
 ```
 
-### 3.418 Coefficient of Variation
+### 3.6 Coefficient of Variation
 The coefficient of variation is a dimensionless meassure of dispersion in data, the lower the value the less dispersion a feature has.
 
 ```{r}
@@ -377,7 +372,7 @@ Viewing variables with less than a 0.05 coefficient of variation. There are none
 cv_numeric_variables[cv_numeric_variables < 0.05]
 ```
 
-### 3.5 Linear Dependencies
+### 3.7 Linear Dependencies
 Caret finds sets of linear combinations to remove them, however there are none.
 
 ```{r}
@@ -405,6 +400,7 @@ final_train$y<-train$y
 final_test<-data.table(predict(dummy, newdata = test))
 ```
 
+### 4.3 Train Function
 Now we define our training function, it will perform a 5 fold cross validation on 80% of the training data and then a final validation on the remaining 20% of the data that acts as a holdout. It also does the aforementioned preprocessing.
 
 ```{r}
@@ -448,6 +444,7 @@ train_val<- function(train_dt, model, sampling){
 }
 ```
 
+### 4.4 Logistic Regression
 Now we will run a simple logistic regression as a baseline, this will serve as a way of knowing if our feature engineering steps improve performance.
 
 ```{r baseline}
@@ -628,7 +625,7 @@ summary(results)
 ### 6.6 Plot of Results
 We plot the results to get a deeper understanding which is our best model.
 
-```{r, fig.height=18, fig.width=16}
+```{r, fig.height=14, fig.width=16}
 bwplot(results, layout = c(2, 1), scales = list(relation="free"))
 ```
 
@@ -680,7 +677,7 @@ print(now()-ini)
 grid_rf
 ```
 
-### Final model
+### 7.1 Final model
 
 And this is the final model:
 
@@ -688,23 +685,23 @@ And this is the final model:
 grid_rf$finalModel
 ```
 
-### Plot of results during Grid Search
+### 7.2 Plot of results during Grid Search
 Here we can see the Recall of the model accross the grid search process.
 
 ```{r}
 plot(grid_rf)
 ```
 
-### Variable Importance
+### 7.3 Variable Importance
 Here we see the variable importance for the final model.
 
 ```{r}
 plot(varImp(grid_rf), top = 20)
 ```
 
-### Results on Holdout after Grid Search
+### 7.4 Results on Holdout after Grid Search
 
-#### ROC Curve
+#### 7.41 ROC Curve
 
 ```{r}
 predicted <- predict(grid_rf, newdata = holdout)
@@ -713,7 +710,7 @@ roc_curve<-roc(response=as.numeric(factor(holdout$y == "yes")), predictor=as.num
 plot.roc(roc_curve, main='ROC on Holdout');grid()
 ```
 
-#### Confusion Matrix
+#### 7.42 Confusion Matrix
 
 ```{r}
 print(confusionMatrix(table(predicted, holdout$y), positive="yes", mode="everything"))
@@ -731,8 +728,41 @@ fwrite(df_pred[,c("predicted")],"predictions.csv")
 
 ## 9. Conclusions
 
-We conclude that after extensive feature exploration, engineering and modelling that the best preforming model is a Random Forrest with SMOTE sampling and the following parameters. (Explain Parameters),
+We conclude that after extensive feature exploration, feature engineering, and modelling, the best preforming model is a Random Forrest with SMOTE sampling and the parameters showed above. The final sensitivity score is 0.96. 
 
-The accuracy... 
+The following are the main considerations and conclusions that we can extract from each part of the process:
 
-Our final feature set...
+* Exploratory Data Analysis
+
+The initial dataset was highly unbalanced where, for our target variable (term deposit subscrption), 88% of the labels correspond to class NO. Considering this, we tested different sample techniques (oversampling, undersampling and SMOTE) to understan which technique performs better.
+
+A Shiny Dashboard was built to present some plots and basic data, in order to understand the data given in a easier way. R gives this kind of useful tools to manage in a more visual and interactive way all kind of data. 
+
+* Feature Engineering
+
+We created a set of additional features based on the initial dataset. From these new features we can see that for the final model Days to end of month, Quantity of loans, Q3 and Balance General Status, among others were relevant. 
+
+Considering that the Random forest algorithm automatically performs feature selection, we can see from the plot above that the most remarkable variable is duration.
+
+Our final feature set remains the same beacuse there was no high significant correlation, low score of dispersion or no linear dependencies between all the features. 
+
+* Modelling
+
+We assume that having a false positive error brings a higher cost than a false negative; so in this case we base our results on the sensitivity metric (True positive rate).
+
+After running a Logistc Regression as baseline model and included new features, we tested 4 different classification techniques:
+
+* Logistic Regression
+* Logistic Regression with Regularization (LASSO)
+* Random Forest
+* XG Boost
+
+The best Recall score was from the Random Forest model so a cross validated, randomized grid search was applied in order to define the final model and optimize Recall. Different tuning parameters were tested given the best outcome the following ones:  
+* 'min.node.size'=1 
+* 'mtry' = 32 
+* 'splitrule' = extratrees 
+* 'min.node.size' = 1
+
+The results of the final model were presented with an ROC curve and a plotted confusion matrix.
+
+Finally, the target variable was predicted and on the test set and a .csv file was created to store all the data.
