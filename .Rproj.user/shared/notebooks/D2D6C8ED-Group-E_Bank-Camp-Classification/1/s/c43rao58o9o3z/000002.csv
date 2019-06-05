@@ -1,0 +1,7 @@
+"0","#Marital + Loan bar chart (count)"
+"0","p6<-ggplot(train, "
+"0","           aes(x = marital, "
+"0","               fill = loan)) + "
+"0","  geom_bar(position = ""dodge"")+ scale_fill_manual(values=c(""dodgerblue4"",""dodgerblue3""))+"
+"0","  labs(title = ""Loan Acquisition by Marital Status"")+xlab(""Marital Status"")+ ylab(""Count"")"
+"0","p6"

@@ -1,0 +1,8 @@
+"0","mytable <- table(train$education, train$y)"
+"0","tab <- as.data.frame(prop.table(mytable, 2))"
+"0","colnames(tab) <-  c(""education"", ""y"", ""perc"")"
+"0",""
+"0","p11<- ggplot(data = tab, aes(x = education, y = perc, fill = y)) + "
+"0","  geom_bar(stat = 'identity', position = 'dodge', alpha = 1) + scale_fill_manual(values=c(""dodgerblue4"",""dodgerblue3""))+"
+"0","labs(title = ""Term Deposit Subscription by Education Level"")+xlab(""Education Level"")+ ylab(""Percent"")"
+"0","p11"

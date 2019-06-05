@@ -1,0 +1,6 @@
+"0","p10<-ggplot(train, "
+"0","           aes(x = education, "
+"0","               fill = default)) + "
+"0","  geom_bar(position = ""dodge"")+ scale_fill_manual(values=c(""dodgerblue4"",""dodgerblue3""))+"
+"0","  labs(title = ""Default by Education Level"")+xlab(""Education Level"")+ ylab(""Count"")"
+"0","p10"

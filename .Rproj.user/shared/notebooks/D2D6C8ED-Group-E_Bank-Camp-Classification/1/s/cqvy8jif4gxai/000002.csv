@@ -1,0 +1,7 @@
+"0","p16<-ggplot(train, "
+"0","            aes(y = balance, "
+"0","                x = education)) +  "
+"0","  geom_jitter(color = ""dodgerblue4"") + "
+"0","  labs(title = ""Balance Distribution by Education Level"")+theme(axis.text.x = element_text(angle=90))+"
+"0","  xlab(""Education"")+ ylab(""Balance"")"
+"0","p16"

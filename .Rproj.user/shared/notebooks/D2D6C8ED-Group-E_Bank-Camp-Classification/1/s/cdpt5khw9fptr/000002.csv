@@ -1,0 +1,6 @@
+"0","p7<-ggplot(train, "
+"0","             aes(x = marital, "
+"0","                 fill = default)) + "
+"0","    geom_bar(position = ""dodge"")+ scale_fill_manual(values=c(""dodgerblue4"",""dodgerblue3""))+"
+"0","  labs(title = ""Default by Marital Status"")+xlab(""Marital Status"")+ ylab(""Count"")"
+"0","p7"

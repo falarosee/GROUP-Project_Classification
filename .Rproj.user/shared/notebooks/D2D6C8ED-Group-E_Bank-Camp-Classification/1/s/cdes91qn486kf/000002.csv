@@ -1,0 +1,7 @@
+"0","p18<-ggplot(train, "
+"0","       aes(y = balance, "
+"0","           x = job)) +  "
+"0","  geom_jitter(color = ""dodgerblue4"") + "
+"0","  labs(title = ""Balance Distribution by Kind of Job"")+theme(axis.text.x = element_text(angle=90))+"
+"0","  xlab(""Job"")+ ylab(""Balance"")"
+"0","p18"

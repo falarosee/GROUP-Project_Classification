@@ -1,0 +1,13 @@
+"0","lm <- train_val(final_train, ""glm"")"
+"2","Cross Validation Scores having Yes as the positive class
+"
+"2","10.5528372988529950.6474930195744610.3450487012987010.4498006999683570.02446304726150530.0349004695627960.02818878779315440.0295972690916573
+"
+"2","Train + Predict time:
+"
+"2","1.14264171918233
+"
+"2","Holdout Scores
+"
+"2","yesc(287, 552, 156, 6238)c(Accuracy = 0.902115304852758, Kappa = 0.399606910349109, AccuracyLower = 0.895034994026585, AccuracyUpper = 0.908869578357855, AccuracyNull = 0.884003871146136, AccuracyPValue = 4.72072301136928e-07, McnemarPValue = 7.49446923470383e-50)c(Sensitivity = 0.34207389749702, Specificity = 0.975602126994057, `Pos Pred Value` = 0.64785553047404, `Neg Pred Value` = 0.918703976435935, Precision = 0.647855530474041, Recall = 0.34207389749702, F1 = 0.447737909516381, Prevalence = 0.115996128853864, `Detection Rate` = 0.0396792478916079, `Detection Prevalence` = 0.0612470620765934, `Balanced Accuracy` = 0.658838012245539)everythinglist()
+"

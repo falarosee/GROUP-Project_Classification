@@ -1,0 +1,5 @@
+"0","dummy<-dummyVars(formula= ~., data = train[, -""y""], sep = ""_"")"
+"0","final_train<-data.table(predict(dummy, newdata = train[, -""y""]))"
+"0","final_train$y<-train$y"
+"0","final_test<-data.table(predict(dummy, newdata = test))"
+"0","head(final_train)"

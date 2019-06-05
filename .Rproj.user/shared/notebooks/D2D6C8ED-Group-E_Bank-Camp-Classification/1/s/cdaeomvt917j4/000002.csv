@@ -1,0 +1,6 @@
+"0","p13<-ggplot(train, "
+"0","            aes(x = job, "
+"0","                fill = default)) + "
+"0","  geom_bar(position = ""dodge"")+ scale_fill_manual(values=c(""dodgerblue4"",""dodgerblue3""))+theme(axis.text.x = element_text(angle=90))+"
+"0","  labs(title = ""Default Status by Job"")+xlab(""Job"")+ ylab(""Count"")"
+"0","p13"
