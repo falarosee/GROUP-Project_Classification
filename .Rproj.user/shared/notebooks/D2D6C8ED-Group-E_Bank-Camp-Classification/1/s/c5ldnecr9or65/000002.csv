@@ -1,7 +1,0 @@
-"0","numeric_variables<-names(numerical)"
-"0","sd_numeric_variables<-sapply(train[,numeric_variables, with=F], sd)"
-"0","cv_numeric_variables<-sd_numeric_variables/colMeans(train[,numeric_variables, with=F])"
-"0",""
-"0","ggplot(data.table(var=names(cv_numeric_variables),cv=cv_numeric_variables),"
-"0","       aes(var,fill=cv))+geom_bar()+coord_polar()+scale_fill_gradient(low='white', high = 'dodgerblue4')"
-"0",""

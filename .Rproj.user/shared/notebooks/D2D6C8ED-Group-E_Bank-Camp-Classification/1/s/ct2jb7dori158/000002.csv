@@ -1,5 +1,0 @@
-"0","p20<-ggplot(train, aes(x=as.factor(y), y=pdays)) +"
-"0","  geom_boxplot(fill=""dodgerblue3"", color=""dodgerblue4"")+"
-"0","  theme_classic()+labs(title = ""Days from last contact by Term Deposit Subscription"")+xlab(""Term deposit"")+"
-"0","  ylab(""Days from last contact"")"
-"0","p20"

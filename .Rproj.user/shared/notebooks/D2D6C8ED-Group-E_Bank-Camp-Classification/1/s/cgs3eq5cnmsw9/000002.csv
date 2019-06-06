@@ -1,6 +1,0 @@
-"0","p12<-ggplot(train, "
-"0","           aes(x = job, "
-"0","               fill = loan)) + "
-"0","  geom_bar(position = ""dodge"")+ scale_fill_manual(values=c(""dodgerblue4"",""dodgerblue3""))+theme(axis.text.x = element_text(angle=90))+"
-"0","  labs(title = ""Job by Loan Status"")+xlab(""Job"")+ ylab(""Count"")"
-"0","p12"

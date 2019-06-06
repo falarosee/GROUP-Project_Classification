@@ -1,8 +1,0 @@
-"0","p17<-ggplot(train, "
-"0","            aes(x = job, "
-"0","                y = balance)) + geom_line(size = 1.5, "
-"0","                                          color = ""lightgrey"") +"
-"0","  geom_boxplot(fill=""dodgerblue3"", color=""dodgerblue4"") +"
-"0","  labs(title = ""Balance by Kind of Job"")+theme(axis.text.x = element_text(angle=90))+"
-"0","  xlab(""Job"")+ ylab(""Balance"")"
-"0","p17"

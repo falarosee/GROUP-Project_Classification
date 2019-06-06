@@ -1,5 +1,0 @@
-"0","p19<-ggplot(train, aes(x=as.factor(y), y=duration)) +"
-"0","  geom_boxplot(fill=""dodgerblue3"", color=""dodgerblue4"")+"
-"0","  theme_classic()+labs(title = ""Call Duration by Term Deposit Subscription"")+xlab(""Term deposit"")+"
-"0","  ylab(""Call Duration (sec.)"")"
-"0","p19"
