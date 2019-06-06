@@ -1,6 +1,8 @@
 library(shinydashboard)
-library(ggplo)
+library(ggplot2)
+library(data.table)
 
+setwd("F:/IE Big Data & Business Analytics/Term 3/R/Group Project")
 train = data.table(read.csv("BankCamp_train.csv"))
 
 ui = dashboardPage(  skin = "purple",
