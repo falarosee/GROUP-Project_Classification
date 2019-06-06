@@ -431,10 +431,11 @@ train_val<- function(train_dt, model, sampling){
   model<- train(y~ ., data = model_train, method = model, metric="Recall", trControl=tc, preProcess=pp)
   message("Cross Validation Scores having Yes as the positive class")
   message(model$results)
-  message("Train + Predict time:")
-  message(now()-ini)
   
   predicted = predict(model, newdata = holdout)
+  
+  message("Train + Predict time:")
+  message(now()-ini)
   
   print("Holdout Scores")
   print(confusionMatrix(table(predicted, holdout$y), positive="yes", mode="everything"))
