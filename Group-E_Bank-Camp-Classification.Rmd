@@ -92,7 +92,7 @@ str(train)
 summary(train)
 ```
 
-#### Misssing
+#### Missing
 ```{r missing}
 sapply(train, function(x) sum(is.na(x)))
 ```
@@ -728,7 +728,7 @@ fwrite(df_pred[,c("predicted")],"predictions.csv")
 
 ## 9. Conclusions
 
-We conclude that after extensive feature exploration, feature engineering, and modelling, the best preforming model is a Random Forrest with SMOTE sampling and the parameters showed above. The final sensitivity score is 0.96. 
+We conclude that after extensive feature exploration, feature engineering, and modelling, the best preforming model is a Random Forrest with SMOTE sampling and the parameters showed above. The final sensitivity score is 0.81. 
 
 The following are the main considerations and conclusions that we can extract from each part of the process:
 
