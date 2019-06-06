@@ -11,8 +11,7 @@ author: "Group E"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, comment = NA, warning = FALSE)
-start_time <- Sys.time()
-print(paste0('---START--- Starting at ',start_time))
+set.seed(1000)
 packages_list <- c(
   'caret',
   'corrplot',
