@@ -1,5 +1,6 @@
 library(shinydashboard)
-library(ggplo)
+library(ggplot2)
+library(data.table)
 
 train = data.table(read.csv("BankCamp_train.csv"))
 
